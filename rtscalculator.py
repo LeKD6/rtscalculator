@@ -9,8 +9,8 @@ def fetch_data(year, season_type):
     soup = BeautifulSoup(response.content, 'html.parser')
     table = soup.find(name='table', id='per_game_stats')
     df = pd.read_html(str(table))[0]
-    df = df.dropna()
-    df = df[['Player', 'PTS', 'FGA', 'FTA', 'Tm', 'MP']]
+    df = df.dropna(subset=['Player', 'Tm', 'MP'])  # Only drop rows where these columns are NaN
+    df.fillna({'PTS': 0, 'FGA': 0, 'FTA': 0}, inplace=True)  # Fill NaN with 0 for these columns
     for col in ['PTS', 'FGA', 'FTA', 'MP']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
     TSA_league = df['FGA'].sum() + 0.44 * df['FTA'].sum()
