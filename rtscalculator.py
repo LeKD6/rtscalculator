@@ -10,7 +10,7 @@ def fetch_data(year, season_type):
     table = soup.find(name='table', id='per_game_stats')
     df = pd.read_html(str(table))[0]
     df = df.dropna(subset=['Player', 'Tm', 'MP'])  # Only drop rows where these columns are NaN
-    df.fillna({'PTS': 0, 'FGA': 0, 'FTA': 0, '3PA': 0, '3P' : 0, 'AST': 0, 'TOV': 0}, inplace=True)  # Fill NaN with 0 for these columns
+    df.fillna({'PTS': 0, 'FGA': 0, 'FTA': 0, '3PA': 0, '3P' : 0, '3P%' : 0, 'AST': 0, 'TOV': 0}, inplace=True)  # Fill NaN with 0 for these columns
     for col in ['PTS', 'FGA', 'FTA', 'MP', '3PA', 'AST', 'TOV']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
@@ -62,7 +62,7 @@ st.sidebar.markdown("""
 """)
 
 
-year = st.selectbox("Select Year:", list(range(1980, 2024)))
+year = st.selectbox("Select Year:", list(range(1980, 2025)))
 season_display = st.selectbox("Select Season Type:", ["Regular Season", "Playoffs"])
 
 if year and season_display:
@@ -94,7 +94,7 @@ if year and season_display:
     if team != 'Select':
         query.append(f"Tm == '{team}'")
     if player != 'Select':
-        query.append(f"Player == '{player}'")
+        query.append(f'Player == "{player}"')
     if mp > 0:
         query.append(f"MP >= {mp}")
         
