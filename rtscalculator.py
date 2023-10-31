@@ -3,8 +3,6 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import requests
 
-time.sleep(random.uniform(1.5, 4.5))
-
 def fetch_data(year, season_type):
     player_stats_url = f"https://www.basketball-reference.com/{season_type}/NBA_{year}_per_game.html"
     response = requests.get(player_stats_url, headers=headers)
