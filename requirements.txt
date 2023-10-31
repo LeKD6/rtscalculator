@@ -1,6 +1,6 @@
-beautifulsoup4==4.11.1
-pandas==2.1
+beautifulsoup4==4.12
+pandas==2.1.2
 requests==2.31.0
-streamlit==1.27.0
+streamlit==1.28.0
 lxml==4.9.3
 html5lib==1.1
