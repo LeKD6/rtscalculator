@@ -5,7 +5,7 @@ import requests
 
 def fetch_data(year, season_type):
     player_stats_url = f"https://www.basketball-reference.com/{season_type}/NBA_{year}_per_game.html"
-    response = requests.get(player_stats_url, headers=headers)
+    response = requests.get(player_stats_url)
     soup = BeautifulSoup(response.content, 'lxml')  # or 'html5lib'
     table = soup.find(name='table', id='per_game_stats')
     df = pd.read_html(str(table), flavor='lxml')[0]
