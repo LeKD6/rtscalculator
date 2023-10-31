@@ -109,7 +109,7 @@ st.sidebar.markdown("""
 """)
 
 # Allow users to select a range of years
-start_year = st.selectbox("Select Start Year:", list(range(1981, 2025)))
+start_year = st.selectbox("Select Start Year:", list(range(1980, 2025)))
 end_year = st.selectbox("Select End Year:", list(range(start_year, 2025)))
 season_display = st.selectbox("Select Season Type:", ["Regular Season", "Playoffs"])
 
