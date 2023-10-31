@@ -10,30 +10,69 @@ def fetch_data(year, season_type):
     table = soup.find(name='table', id='per_game_stats')
     df = pd.read_html(str(table))[0]
     df = df.dropna(subset=['Player', 'Tm', 'MP'])  # Only drop rows where these columns are NaN
-    df.fillna({'PTS': 0, 'FGA': 0, 'FTA': 0, '3PA': 0, '3P' : 0, '3P%' : 0, 'AST': 0, 'TOV': 0}, inplace=True)  # Fill NaN with 0 for these columns
-    for col in ['PTS', 'FGA', 'FTA', 'MP', '3PA', 'AST', 'TOV']:
+    df.fillna({'PTS': 0, 'FGA': 0, 'FTA': 0, '3PA': 0, '3P' : 0, '3P%' : 0, 'AST': 0, 'TOV': 0, 'TRB' : 0, 'FT%': 0, 'G' : 0}, inplace=True)  # Fill NaN with 0 for these columns
+    for col in ['PTS', 'FGA', 'FTA', 'MP', '3PA', 'AST', 'TOV', 'TRB', 'FT%', 'G']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    df['3P%'] = pd.to_numeric(df['3P%'], errors='coerce') * 100
-    df['3PA'] = pd.to_numeric(df['3PA'], errors='coerce')
-    df['3P'] = pd.to_numeric(df['3P'], errors='coerce')
-
-    # Calculate league-wide statistics
-    TSA_league = df['FGA'].sum() + 0.44 * df['FTA'].sum()
-    TS_league = df['PTS'].sum() / (2 * TSA_league) * 100
-    league_avg_3P = df['3P'].sum() / df['3PA'].sum() * 100
-    
-    # Calculate player metrics
-    df['TSA'] = df['FGA'] + 0.44 * df['FTA']
-    df['TS%'] = df['PTS'] / (2 * df['TSA']) * 100
-    df['rTS%'] = df['TS%'] - TS_league
-    df['r3P%'] = (df['3P%'] - league_avg_3P) 
-    df['AST:TOV'] = df['AST'] / df['TOV'].replace(0, 1)  # replace 0 with 1 to avoid division by zero
-    
-    # Calculate rA:T based on positions
-    df['rAST:TOV'] = df.groupby('Pos')['AST:TOV'].rank(pct=True) * 100    
-
     return df
+
+def fetch_data_multi_years(start_year, end_year, season_type):
+    all_dfs = []
+    for year in range(start_year, end_year + 1):
+        df = fetch_data(year, season_type)
+        df['Year'] = year  # Tagging each entry with the year
+
+        # Convert columns to numeric types
+        df['3P%'] = pd.to_numeric(df['3P%'], errors='coerce') * 100
+        df['3PA'] = pd.to_numeric(df['3PA'], errors='coerce')
+        df['3P'] = pd.to_numeric(df['3P'], errors='coerce')
+        df['FT%'] = pd.to_numeric(df['FT%'], errors='coerce') * 100
+        df['FTA'] = pd.to_numeric(df['FTA'], errors='coerce')
+        df['FT'] = pd.to_numeric(df['FT'], errors='coerce')
+
+        # Calculate league-wide statistics for this specific year
+        TSA_league = df['FGA'].sum() + 0.44 * df['FTA'].sum()
+        TS_league = df['PTS'].sum() / (2 * TSA_league) * 100
+        league_avg_3P = df['3P'].sum() / df['3PA'].sum() * 100
+        league_avg_FT = df['FT'].sum() / df['FTA'].sum() * 100
+
+        # Calculate player metrics for this specific year
+        df['TSA'] = df['FGA'] + 0.44 * df['FTA']
+        df['TS%'] = df['PTS'] / (2 * df['TSA']) * 100
+        df['rTS%'] = df['TS%'] - TS_league
+        df['r3P%'] = (df['3P%'] - league_avg_3P)
+        df['AST:TOV'] = df['AST'] / df['TOV'].replace(0, 1)
+        df['rAST:TOV'] = df.groupby('Pos')['AST:TOV'].rank(pct=True) * 100
+        df['rFT%'] = df['FT%'] - league_avg_FT
+
+        all_dfs.append(df)
+
+    # Concatenate all the year-specific DataFrames
+    combined_df = pd.concat(all_dfs, ignore_index=True)
+    # Calculate the total number of games played across all years for a specific player
+    total_games = combined_df.groupby('Player')['G'].sum()
+
+# Calculate the weighted average for each column of interest
+    weighted_avg_rows = []
+    for player, df_player in combined_df.groupby('Player'):
+        weighted_avg_row = {}
+        for col in ['PTS', 'TS%', 'rTS%', '3P%', 'r3P%', 'AST:TOV', 'rAST:TOV', 'FGA', '3PA', 'FTA', 'FT%', 'rFT%', 'AST', 'TRB']:
+            weighted_avg_row[col] = (df_player[col] * df_player['G']).sum() / total_games[player]
+        
+    # Adding identifiers for the average row
+        weighted_avg_row['Player'] = player
+        weighted_avg_row['Tm'] = 'Average'
+        weighted_avg_row['Year'] = 'Average'
+        weighted_avg_rows.append(weighted_avg_row)
+
+# Create a new DataFrame containing these rows
+    weighted_avg_df = pd.DataFrame(weighted_avg_rows)
+
+# Append these new rows to your existing DataFrame
+    combined_df = pd.concat([combined_df, weighted_avg_df], ignore_index=True)
+
+    return combined_df
+
 
 def format_dataframe(df):
     for col in df.select_dtypes(include=[float]).columns:
@@ -51,23 +90,34 @@ st.title("NBA Advanced Stats Calculator")
 # Add glossary to the sidebar
 st.sidebar.title("Glossary")
 st.sidebar.markdown("""
-- **PTS**: Points
 - **MP**: Minutes Played
+- **G**: Games Played
+- **FGA**: Field Goals attempted per game
+- **PTS**: Points per game
+- **AST**: Assists per game
+- **TRB**: Rebounds per game
 - **TS%**: True Shooting Percentage - A measure of efficiency taking into account free throws as well as 3s being worth more points than 2s.
 - **rTS%**: Relative True Shooting Percentage - How many percentage points above or below the league average TS% a player falls.
+- **3PA**: Three-Point shots attempted per game
 - **3P%**: Three-Point Percentage
 - **r3P%**: Relative Three-Point Percentage - How many percentage points above or below the league average 3P% a player falls.
+- **FTA**: Free Throws attempted per game
+- **FT%**: Free Throw Percentage
+- **rFT%**: Relative Free Throw Percentage - How many percentage points above or below the league average FT% a player falls.
 - **AST/TOV**: The ratio of assist per game to turnovers per game a player has. A number over 1 indicates more assists than turnovers.
 - **rAST/TOV**: Relative Assist-to-Turnover Ratio - The percentile ranking a player is at their position for their AST/TOV ratio. Adjusted for position to account for some positions naturally being less passing inclined than others. 99 = 99th percentile, aka one of the best. 50 is average.
 """)
 
-
-year = st.selectbox("Select Year:", list(range(1980, 2025)))
+# Allow users to select a range of years
+start_year = st.selectbox("Select Start Year:", list(range(1980, 2025)))
+end_year = st.selectbox("Select End Year:", list(range(start_year, 2025)))
 season_display = st.selectbox("Select Season Type:", ["Regular Season", "Playoffs"])
 
-if year and season_display:
+if start_year and end_year and season_display:
+    st.write(f"Selected Years: {start_year} to {end_year}")  # Display the selected years
     season = season_type_mapping[season_display]
-    df_player_stats = fetch_data(year, season)
+    df_player_stats = fetch_data_multi_years(start_year, end_year, season)
+    
     
     # Format the DataFrame
     formatted_df = format_dataframe(df_player_stats)
@@ -82,8 +132,9 @@ if year and season_display:
     if player1 != 'Select' and player2 != 'Select':
         comparison_df = pd.concat([df_player_stats[df_player_stats['Player'] == player1], 
                                    df_player_stats[df_player_stats['Player'] == player2]])
-        comparison_df = comparison_df.round({'PTS': 1, 'TS%': 1, 'rTS%': 1, '3P%': 1, 'r3P%': 1, 'AST:TOV': 1, 'rA:T': 1})
-        st.table(comparison_df[['Player', 'Tm', 'PTS', 'TS%', 'rTS%', '3P%', 'r3P%', 'AST:TOV', 'rAST:TOV']])
+        comparison_df = comparison_df.round({'PTS': 1, 'TS%': 1, 'rTS%': 1, '3P%': 1, 'r3P%': 1, 'rFT%': 1, 'AST:TOV': 1, 'rAST:TOV': 1})
+        st.table(comparison_df[['Player', 'Year', 'Tm', 'G', 'FGA', 'PTS', 'AST', 'TRB', 'TS%', 'rTS%', '3PA', '3P%', 'r3P%', 'FTA', 'FT%', 'rFT%', 'AST:TOV', 'rAST:TOV']])
+
 
     st.header("For Individual or Teams Use Either of the Below Filters")
     team = st.selectbox("Select Team:", ['Select'] + unique_teams)
@@ -100,5 +151,5 @@ if year and season_display:
         
     query = " & ".join(query)
     filtered_df = df_player_stats.query(query) if query else df_player_stats
-    filtered_df = filtered_df.round({'PTS': 1, 'TS%': 1, 'rTS%': 1, '3P%': 1, 'r3P%': 1, 'AST:TOV': 1, 'rAST:TOV': 1})
-    st.table(filtered_df[['Player', 'Tm', 'PTS', 'TS%', 'rTS%', '3P%', 'r3P%', 'AST:TOV', 'rAST:TOV']])
+    filtered_df = filtered_df.round({'PTS': 1, 'TS%': 1, 'rTS%': 1, '3P%': 1, 'r3P%': 1, 'rFT%': 1, 'AST:TOV': 1, 'rAST:TOV': 1})
+    st.table(filtered_df[['Player', 'Year', 'Tm', 'G', 'FGA', 'PTS', 'AST', 'TRB', 'TS%', 'rTS%', '3PA', '3P%', 'r3P%', 'FTA', 'FT%', 'rFT%', 'AST:TOV', 'rAST:TOV']])
