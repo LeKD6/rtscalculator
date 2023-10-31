@@ -2,18 +2,15 @@ import streamlit as st
 from bs4 import BeautifulSoup
 import pandas as pd
 import requests
-import random
-import time
 
 time.sleep(random.uniform(1.5, 4.5))
 
 def fetch_data(year, season_type):
     player_stats_url = f"https://www.basketball-reference.com/{season_type}/NBA_{year}_per_game.html"
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
     response = requests.get(player_stats_url, headers=headers)
-    soup = BeautifulSoup(response.content, 'html.parser')
+    soup = BeautifulSoup(response.content, 'lxml')  # or 'html5lib'
     table = soup.find(name='table', id='per_game_stats')
-    df = pd.read_html(str(table))[0]
+    df = pd.read_html(str(table), flavor='lxml')[0]
     df = df.dropna(subset=['Player', 'Tm', 'MP'])  # Only drop rows where these columns are NaN
     df.fillna({'PTS': 0, 'FGA': 0, 'FTA': 0, '3PA': 0, '3P' : 0, '3P%' : 0, 'AST': 0, 'TOV': 0, 'TRB' : 0, 'FT%': 0, 'G' : 0}, inplace=True)  # Fill NaN with 0 for these columns
     for col in ['PTS', 'FGA', 'FTA', 'MP', '3PA', 'AST', 'TOV', 'TRB', 'FT%', 'G']:
