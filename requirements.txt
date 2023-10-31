@@ -3,4 +3,4 @@ pandas==2.1
 requests==2.31.0
 streamlit==1.27.0
 lxml==4.9.3
-html5lib==1.1
+
