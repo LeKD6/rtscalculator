@@ -77,7 +77,6 @@ def fetch_data_multi_years(start_year, end_year, season_type):
 
 
 def format_dataframe(df):
-    for col in df.select_dtypes(include=[float]).columns:
 
     return df
 # Mapping for the season type
