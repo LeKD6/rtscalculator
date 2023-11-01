@@ -148,7 +148,7 @@ if start_year and end_year and season_display:
     gridOptions = {
         'defaultColDef': {
             'resizable': True,
-            'width': 75,
+            'width': 65,
             'sortable': True
         },
         'columnDefs': [
@@ -161,13 +161,13 @@ if start_year and end_year and season_display:
             {'field': 'AST'},
             {'field': 'TRB'},
             {'field': 'TS%'},
-            {'field': 'rTS%'},
+            {'field': 'rTS%', 'width': 100},
             {'field': '3PA'},
             {'field': '3P%'},
-            {'field': 'r3P%'},
+            {'field': 'r3P%', 'width': 100},
             {'field': 'FTA'},
             {'field': 'FT%'},
-            {'field': 'rFT%'},
+            {'field': 'rFT%', 'width': 100},
             {'field': 'AST:TOV', 'width': 100},
             {'field': 'rAST:TOV', 'width': 110}
         ],
