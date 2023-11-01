@@ -75,11 +75,6 @@ def fetch_data_multi_years(start_year, end_year, season_type):
 
     return combined_df
 
-
-def format_dataframe(df):
-    for col in df.select_dtypes(include=[float]).columns:
-        df[col] = df[col].apply(lambda x: '{:.2f}'.format(x))
-    return df
 # Mapping for the season type
 season_type_mapping = {
     "Regular Season": "leagues",
