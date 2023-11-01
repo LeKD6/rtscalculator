@@ -148,7 +148,7 @@ if start_year and end_year and season_display:
     gridOptions = {
         'defaultColDef': {
             'resizable': True,
-            'width': 65,
+            'width': 75,
             'sortable': True
         },
         'columnDefs': [
