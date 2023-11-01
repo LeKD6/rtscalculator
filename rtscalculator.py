@@ -2,6 +2,8 @@ import streamlit as st
 from bs4 import BeautifulSoup
 import pandas as pd
 import requests
+from st_aggrid import AgGrid
+
 
 def fetch_data(year, season_type):
     player_stats_url = f"https://www.basketball-reference.com/{season_type}/NBA_{year}_per_game.html"
@@ -117,7 +119,7 @@ if start_year and end_year and season_display:
     st.write(f"Selected Years: {start_year} to {end_year}")  # Display the selected years
     season = season_type_mapping[season_display]
     df_player_stats = fetch_data_multi_years(start_year, end_year, season)
-    
+
     
     # Format the DataFrame
     formatted_df = format_dataframe(df_player_stats)
@@ -129,16 +131,54 @@ if start_year and end_year and season_display:
     team = st.selectbox("Select Team:", ['Select'] + unique_teams)
     player = st.selectbox("Select Player:", ['Select'] + unique_players)
     mp = st.slider("Select Minimum MP:", min_value=0, max_value=48)
-
+    formatted_df['MP'] = pd.to_numeric(formatted_df['MP'], errors='coerce')  
+    
     query = []
     if team != 'Select':
         query.append(f"Tm == '{team}'")
     if player != 'Select':
         query.append(f'Player == "{player}"')
     if mp > 0:
-        query.append(f"MP >= {mp}")
-        
+        query.append(f"MP >= {mp}")  
     query = " & ".join(query)
     filtered_df = df_player_stats.query(query) if query else df_player_stats
+    filtered_df['MP'] = pd.to_numeric(filtered_df['MP'], errors='coerce')  
     filtered_df = filtered_df.round({'PTS': 1, 'TS%': 1, 'rTS%': 1, '3P%': 1, 'r3P%': 1, 'rFT%': 1, 'AST:TOV': 1, 'rAST:TOV': 1})
-    st.table(filtered_df[['Player', 'Year', 'Tm', 'G', 'FGA', 'PTS', 'AST', 'TRB', 'TS%', 'rTS%', '3PA', '3P%', 'r3P%', 'FTA', 'FT%', 'rFT%', 'AST:TOV', 'rAST:TOV']])
+
+    gridOptions = {
+        'defaultColDef': {
+            'resizable': True,
+            'width': 100,
+            'sortable': True
+        },
+        'columnDefs': [
+            {'field': 'Player', 'pinned': 'left', 'width': 150},
+            {'field': 'Year'},
+            {'field': 'Tm'},
+            {'field': 'G'},
+            {'field': 'FGA'},
+            {'field': 'PTS'},
+            {'field': 'AST'},
+            {'field': 'TRB'},
+            {'field': 'TS%'},
+            {'field': 'rTS%'},
+            {'field': '3PA'},
+            {'field': '3P%'},
+            {'field': 'r3P%'},
+            {'field': 'FTA'},
+            {'field': 'FT%'},
+            {'field': 'rFT%'},
+            {'field': 'AST:TOV'},
+            {'field': 'rAST:TOV', 'width': 110}
+        ],
+    }
+
+    AgGrid(
+        filtered_df[[
+            'Player', 'Year', 'Tm', 'G', 'FGA', 'PTS', 
+            'AST', 'TRB', 'TS%', 'rTS%', '3PA', '3P%', 
+            'r3P%', 'FTA', 'FT%', 'rFT%', 'AST:TOV', 'rAST:TOV'
+        ]], 
+        gridOptions=gridOptions
+    )
+    
