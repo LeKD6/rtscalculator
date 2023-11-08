@@ -175,7 +175,7 @@ if start_year and end_year and season_display:
             "    }"
             "    return {'backgroundColor': color};"
             "}"
-            ),
+            )}, 
             {'field': '3PA'},
             {'field': '3P%'},
             {'field': 'r3P%', 'width': 100},
