@@ -198,14 +198,14 @@ if start_year and end_year and season_display:
         ]], 
         gridOptions=gridOptions
     )
-            {'field': '3PA'},
-            {'field': '3P%'},
-            {'field': 'r3P%', 'width': 100},
-            {'field': 'FTA'},
-            {'field': 'FT%'},
-            {'field': 'rFT%', 'width': 100},
-            {'field': 'AST:TOV', 'width': 100},
-            {'field': 'rAST:TOV', 'width': 110}
+        {'field': '3PA'},
+        {'field': '3P%'},
+        {'field': 'r3P%', 'width': 100},
+        {'field': 'FTA'},
+        {'field': 'FT%'},
+        {'field': 'rFT%', 'width': 100},
+        {'field': 'AST:TOV', 'width': 100},
+        {'field': 'rAST:TOV', 'width': 110}
         ],
         'pagination': True,
         'paginationAutoPageSize': False,
