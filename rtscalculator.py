@@ -326,17 +326,20 @@ if start_year and end_year and season_display:
             {'field': 'AST'},
             {'field': 'TRB'},
             {'field': 'TS%'},
-            {'field': 'rTS%', 'width': 100, 'cellStyle': (f"""
-                function(params) {{
-                    var color = '';
-                    if (params.value <= 0) {{
-                        color = 'rgba(255, 0, 0, ' + (1 - Math.min(params.value / -20, 1)) + ')';
-                    }} else {{
-                        color = 'rgba(0, 255, 0, ' + (Math.min(params.value / 20, 1)) + ')';
-                    }}
-                    return {{'background-color': color}};
-                }}
-            """)},
+            {
+    'field': 'rTS%',
+    'width': 100,
+    'cellStyle': function(params) {
+        var color = '';
+        if (params.value <= 0) {
+            color = 'rgba(255, 0, 0, ' + (1 - Math.min(params.value / -20, 1)) + ')';
+        } else {
+            color = 'rgba(0, 255, 0, ' + (Math.min(params.value / 20, 1)) + ')';
+        }
+        return {'background-color': color};
+    }
+}
+,
             {'field': '3PA'},
             {'field': '3P%'},
             {'field': 'r3P%', 'width': 100},
