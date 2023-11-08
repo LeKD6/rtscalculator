@@ -174,7 +174,6 @@ if start_year and end_year and season_display:
             "        color = 'rgba(0, 255, 0, ' + (Math.min(params.value / 20, 1)) + ')';"
             "    }"
             "    return {'backgroundColor': color};"
-            "}"
             )}, 
             {'field': '3PA'},
             {'field': '3P%'},
