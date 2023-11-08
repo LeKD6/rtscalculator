@@ -69,6 +69,7 @@ def fetch_data_multi_years(start_year, end_year, season_type):
 
 # Create a new DataFrame containing these rows
     weighted_avg_df = pd.DataFrame(weighted_avg_rows)
+    weighted_avg_df = weighted_avg_df.round({'FGA':1, 'AST':1, 'TRB':1, '3PA':1, 'FTA':1, 'FT%':1, 'PTS': 1, 'TS%': 1, 'rTS%': 1, '3P%': 1, 'r3P%': 1, 'rFT%': 1, 'AST:TOV': 1, 'rAST:TOV': 1})
 
 # Append these new rows to your existing DataFrame
     combined_df = pd.concat([combined_df, weighted_avg_df], ignore_index=True)
@@ -171,8 +172,10 @@ if start_year and end_year and season_display:
             {'field': 'AST:TOV', 'width': 100},
             {'field': 'rAST:TOV', 'width': 110}
         ],
+        'pagination': True,
+        'paginationAutoPageSize': False,
+        'paginationPageSize': 30
     }
-
     AgGrid(
         filtered_df[[
             'Player', 'Year', 'Tm', 'G', 'FGA', 'PTS', 
@@ -181,4 +184,5 @@ if start_year and end_year and season_display:
         ]], 
         gridOptions=gridOptions
     )
-    
+
+     
