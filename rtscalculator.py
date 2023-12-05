@@ -4,7 +4,7 @@ import pandas as pd
 import requests
 from st_aggrid import AgGrid
 
-
+@st.cache_data
 def fetch_data(year, season_type):
     player_stats_url = f"https://www.basketball-reference.com/{season_type}/NBA_{year}_per_game.html"
     response = requests.get(player_stats_url)
@@ -18,6 +18,7 @@ def fetch_data(year, season_type):
 
     return df
 
+@st.cache_data
 def fetch_data_multi_years(start_year, end_year, season_type):
     all_dfs = []
     for year in range(start_year, end_year + 1):
@@ -53,7 +54,6 @@ def fetch_data_multi_years(start_year, end_year, season_type):
     combined_df = pd.concat(all_dfs, ignore_index=True)
     # Calculate the total number of games played across all years for a specific player
     total_games = combined_df.groupby('Player')['G'].sum()
-
 # Calculate the weighted average for each column of interest
     weighted_avg_rows = []
     for player, df_player in combined_df.groupby('Player'):
@@ -76,7 +76,7 @@ def fetch_data_multi_years(start_year, end_year, season_type):
 
     return combined_df
 
-
+@st.cache_data
 def format_dataframe(df):
 
     return df
