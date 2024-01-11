@@ -17,9 +17,9 @@ def fetch_data(year, season_type):
     for col in ['PTS', 'FGA', 'FTA', 'MP', '3PA', 'AST', 'TOV', 'TRB', 'FT%', 'G']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    # Override existing columns with per game numbers
+    # Override existing columns with per game numbers and round to 3 decimal places
     for col in ['FGA', 'PTS', 'AST', 'TRB', '3PA', 'FTA']:
-        df[col] = df[col] / df['G']
+        df[col] = (df[col] / df['G']).round(1)
 
     # Fill NaN values after performing conversions
     df.fillna({'PTS': 0, 'FGA': 0, 'FTA': 0, '3PA': 0, '3P': 0, '3P%': 0, 'AST': 0, 'TOV': 0, 'TRB': 0, 'FT%': 0, 'G': 0}, inplace=True)
@@ -82,8 +82,8 @@ def fetch_data_multi_years(start_year, end_year, season_type):
 
         # Calculate league-wide statistics for this specific year
         df['TS_league'] = TS_league
-        league_avg_3P = df['3P'].sum() / df['3PA'].sum() * 100
-        league_avg_FT = df['FT'].sum() / df['FTA'].sum() * 100
+        league_avg_3P = df['3P'].sum() / df['3PA'].sum()
+        league_avg_FT = df['FT'].sum() / df['FTA'].sum()
 
         # Calculate player metrics for this specific year
         df['TSA'] = df['FGA'] + 0.44 * df['FTA']
