@@ -6,7 +6,7 @@ from st_aggrid import AgGrid
 
 @st.cache_data
 def fetch_data(year, season_type):
-    player_stats_url = f"https://www.basketball-reference.com/{season_type}/NBA_{year}_per_game.html"
+    player_stats_url = f"https://www.basketball-reference.com/{season_type}/NBA_{year}_totals.html"
     response = requests.get(player_stats_url)
     soup = BeautifulSoup(response.content, 'lxml')  # or 'html5lib'
     table = soup.find(name='table', id='per_game_stats')
