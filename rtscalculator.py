@@ -17,13 +17,39 @@ def fetch_data(year, season_type):
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
     return df
+@st.cache_data
+def fetch_league_averages(year):
+    url = f"https://www.basketball-reference.com/leagues/NBA_{year}_totals.html"
+    response = requests.get(url)
+    soup = BeautifulSoup(response.content, 'lxml')
+    
+    # Find the correct table by checking for 'totals' in the table's ID
+    for table in soup.find_all('table'):
+        if 'totals' in table.get('id', ''):
+            df = pd.read_html(str(table))[0]
+            break
 
+    # Get the league totals for PTS, FGA, and FTA from the last row, which contains the sums
+    league_totals = df[df['Player'] == 'League Totals']
+    
+    # Calculate TS%
+    PTS = league_totals['PTS'].values[0]
+    FGA = league_totals['FGA'].values[0]
+    FTA = league_totals['FTA'].values[0]
+    
+    TSA = FGA + 0.44 * FTA
+    TS% = PTS / (2 * TSA) * 100
+
+    return TS%
+    
 @st.cache_data
 def fetch_data_multi_years(start_year, end_year, season_type):
     all_dfs = []
     for year in range(start_year, end_year + 1):
         df = fetch_data(year, season_type)
         df['Year'] = year  # Tagging each entry with the year
+     # Fetch league-wide True Shooting Percentage (TS%)
+        TS_league = fetch_league_averages(year)
 
         # Convert columns to numeric types
         df['3P%'] = pd.to_numeric(df['3P%'], errors='coerce') * 100
@@ -34,8 +60,7 @@ def fetch_data_multi_years(start_year, end_year, season_type):
         df['FT'] = pd.to_numeric(df['FT'], errors='coerce')
 
         # Calculate league-wide statistics for this specific year
-        TSA_league = df['FGA'].sum() + 0.44 * df['FTA'].sum()
-        TS_league = df['PTS'].sum() / (2 * TSA_league) * 100
+        df['TS_league'] = TS_league
         league_avg_3P = df['3P'].sum() / df['3PA'].sum() * 100
         league_avg_FT = df['FT'].sum() / df['FTA'].sum() * 100
 
