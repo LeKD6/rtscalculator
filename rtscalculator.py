@@ -38,9 +38,9 @@ def fetch_league_averages(year):
     FTA = league_totals['FTA'].values[0]
     
     TSA = FGA + 0.44 * FTA
-    TS% = PTS / (2 * TSA) * 100
+    TS = PTS / (2 * TSA) * 100
 
-    return TS%
+    return TS
     
 @st.cache_data
 def fetch_data_multi_years(start_year, end_year, season_type):
