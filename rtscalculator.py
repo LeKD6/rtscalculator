@@ -19,7 +19,7 @@ def fetch_data(year, season_type):
     return df
 @st.cache_data
 def fetch_league_averages(year):
-    url = f"https://www.basketball-reference.com/leagues/NBA_{year}_totals.html"
+    url = f"https://www.basketball-reference.com/leagues/NBA_stats_totals.html"
     response = requests.get(url)
     soup = BeautifulSoup(response.content, 'lxml')
     
