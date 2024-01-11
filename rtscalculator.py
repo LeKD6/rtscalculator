@@ -18,34 +18,37 @@ def fetch_data(year, season_type):
 
     return df
 @st.cache_data
-def fetch_league_averages(year):
+def fetch_league_averages(input_year):
+    # Adjust the year to match the season format in the table.
+    # Since the input_year is the ending year, we subtract 1 to get the starting year.
+    start_year = input_year - 1
+    season_str = f"{start_year}-{str(input_year)[-2:]}"  # Creates a string like '2023-24'
+
     url = f"https://www.basketball-reference.com/leagues/NBA_stats_totals.html"
     response = requests.get(url)
-    soup = BeautifulSoup(response.content, 'lxml')
-    
-    # Find all tables and inspect them
-    tables = soup.find_all('table')
-    
-    # If there is no table at all, that's an issue.
-    if not tables:
+    dfs = pd.read_html(response.text)
+
+    if not dfs:
         raise ValueError("No tables found on the page.")
-    
-    # Let's assume the first table is the one we want (for demonstration purposes)
-    df = pd.read_html(str(tables[0]), header=1)[0]  # header=1 is used if the first row is headers
-    
-    # Check if the 'PTS', 'FGA', 'FTA' columns exist in this dataframe
-    if 'PTS' in df.columns and 'FGA' in df.columns and 'FTA' in df.columns:
-        # Calculate TS%
-        PTS = df['PTS'].sum()
-        FGA = df['FGA'].sum()
-        FTA = df['FTA'].sum()
-        
-        TSA = FGA + 0.44 * FTA
-        TS_percent = PTS / (2 * TSA) * 100
-        return TS_percent
-    else:
-        raise ValueError("The expected columns were not found in the table.")
-    
+
+    for df in dfs:
+        if 'Season' in df.columns:
+            # Find the row for the specific season
+            season_row = df[df['Season'].str.startswith(season_str)]
+            if not season_row.empty:
+                # Extract the totals for PTS, FGA, and FTA
+                PTS = season_row['PTS'].values[0]
+                FGA = season_row['FGA'].values[0]
+                FTA = season_row['FTA'].values[0]
+                
+                TSA = FGA + 0.44 * FTA
+                TS_percent = PTS / (2 * TSA) * 100
+                return TS_percent
+            else:
+                raise ValueError(f"Data for season {season_str} not found.")
+
+    raise ValueError("The table with the 'Season' column was not found.")
+
 @st.cache_data
 def fetch_data_multi_years(start_year, end_year, season_type):
     all_dfs = []
