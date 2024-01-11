@@ -26,18 +26,26 @@ def fetch_league_averages(input_year):
     response = requests.get(url)
     soup = BeautifulSoup(response.content, 'lxml')
 
-    # Find the correct table
     table = soup.find('table')
     if not table:
         raise ValueError("No table found on the page.")
 
-    # Convert the table to a DataFrame
-    df = pd.read_html(str(table))[0]
+    # Read the table with multi-level headers
+    df = pd.read_html(str(table), header=[0, 1])[0]
+
+    # Flatten the headers
+    df.columns = ['_'.join(col).strip() for col in df.columns.values]
+
+    # Print column names for debugging
+    print(df.columns)
 
     # Find the row for the specific season
-    season_row = df[df['Season'].str.startswith(season_str)]
+    # Adjust the column name based on the flattened headers
+    season_column = 'Season'  # Replace with the correct column name based on printed columns
+    season_row = df[df[season_column].str.startswith(season_str)]
     if not season_row.empty:
         # Extract the totals for PTS, FGA, and FTA
+        # Replace 'PTS', 'FGA', 'FTA' with the correct column names based on printed columns
         PTS = season_row['PTS'].values[0]
         FGA = season_row['FGA'].values[0]
         FTA = season_row['FTA'].values[0]
@@ -47,7 +55,6 @@ def fetch_league_averages(input_year):
         return TS_percent
     else:
         raise ValueError(f"Data for season {season_str} not found.")
-
 @st.cache_data
 def fetch_data_multi_years(start_year, end_year, season_type):
     all_dfs = []
