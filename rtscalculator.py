@@ -5,14 +5,33 @@ import requests
 from st_aggrid import AgGrid
 
 @st.cache_data
+@st.cache_data
 def fetch_data(year, season_type):
     player_stats_url = f"https://www.basketball-reference.com/{season_type}/NBA_{year}_totals.html"
     response = requests.get(player_stats_url)
-    soup = BeautifulSoup(response.content, 'lxml')  # or 'html5lib'
-    table = soup.find(name='table', id='per_game_stats')
-    df = pd.read_html(str(table), flavor='lxml')[0]
-    df = df.dropna(subset=['Player', 'Tm', 'MP'])  # Only drop rows where these columns are NaN
-    df.fillna({'PTS': 0, 'FGA': 0, 'FTA': 0, '3PA': 0, '3P' : 0, '3P%' : 0, 'AST': 0, 'TOV': 0, 'TRB' : 0, 'FT%': 0, 'G' : 0}, inplace=True)  # Fill NaN with 0 for these columns
+    soup = BeautifulSoup(response.content, 'lxml')
+
+    # Find the table
+    table = soup.find('table', {'id': 'per_game_stats'})
+    if not table:
+        raise ValueError("Table with id 'per_game_stats' not found.")
+
+    # Extracting header
+    header_row = table.find('thead').findAll('tr')[-1]
+    headers = [th.getText() for th in header_row.findAll('th')]
+
+    # Extracting data rows
+    data_rows = table.find('tbody').findAll('tr')
+    data = [[td.getText() for td in row.findAll(['th', 'td'])] for row in data_rows]
+
+    # Create DataFrame
+    df = pd.DataFrame(data, columns=headers)
+
+    # Drop rows where 'Player', 'Tm', 'MP' are NaN and fill NaN values for specified columns
+    df = df.dropna(subset=['Player', 'Tm', 'MP'])
+    df.fillna({'PTS': 0, 'FGA': 0, 'FTA': 0, '3PA': 0, '3P': 0, '3P%': 0, 'AST': 0, 'TOV': 0, 'TRB': 0, 'FT%': 0, 'G': 0}, inplace=True)
+
+    # Convert columns to numeric
     for col in ['PTS', 'FGA', 'FTA', 'MP', '3PA', 'AST', 'TOV', 'TRB', 'FT%', 'G']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
