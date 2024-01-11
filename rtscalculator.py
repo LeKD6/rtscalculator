@@ -30,31 +30,31 @@ def fetch_league_averages(input_year):
     if not table:
         raise ValueError("No table found on the page.")
 
-    # Read the table with multi-level headers
-    df = pd.read_html(str(table), header=[0, 1])[0]
+    # Extracting header
+    header_row = table.find('thead').findAll('tr')[-1]  # Targeting the last row in the table header
+    headers = [th.getText() for th in header_row.findAll('th')]
 
-    # Flatten the headers
-    df.columns = ['_'.join(col).strip() for col in df.columns.values]
+    # Extracting data rows
+    data_rows = table.find('tbody').findAll('tr')
+    data = [[td.getText() for td in row.findAll(['th', 'td'])] for row in data_rows]
 
-    # Print column names for debugging
-    print(df.columns)
+    # Create DataFrame
+    stats_df = pd.DataFrame(data, columns=headers)
 
     # Find the row for the specific season
-    # Adjust the column name based on the flattened headers
-    season_column = 'Season'  # Replace with the correct column name based on printed columns
-    season_row = df[df[season_column].str.startswith(season_str)]
+    season_row = stats_df[stats_df['Season'].str.startswith(season_str)]
     if not season_row.empty:
         # Extract the totals for PTS, FGA, and FTA
-        # Replace 'PTS', 'FGA', 'FTA' with the correct column names based on printed columns
-        PTS = season_row['PTS'].values[0]
-        FGA = season_row['FGA'].values[0]
-        FTA = season_row['FTA'].values[0]
+        PTS = float(season_row['PTS'].values[0])
+        FGA = float(season_row['FGA'].values[0])
+        FTA = float(season_row['FTA'].values[0])
         
         TSA = FGA + 0.44 * FTA
         TS_percent = PTS / (2 * TSA) * 100
         return TS_percent
     else:
         raise ValueError(f"Data for season {season_str} not found.")
+
 @st.cache_data
 def fetch_data_multi_years(start_year, end_year, season_type):
     all_dfs = []
