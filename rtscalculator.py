@@ -23,24 +23,28 @@ def fetch_league_averages(year):
     response = requests.get(url)
     soup = BeautifulSoup(response.content, 'lxml')
     
-    # Find the correct table by checking for 'totals' in the table's ID
+    df = None  # Initialize df as None to handle the case where the table isn't found
     for table in soup.find_all('table'):
         if 'totals' in table.get('id', ''):
             df = pd.read_html(str(table))[0]
             break
 
-    # Get the league totals for PTS, FGA, and FTA from the last row, which contains the sums
-    league_totals = df[df['Player'] == 'League Totals']
-    
-    # Calculate TS%
-    PTS = league_totals['PTS'].values[0]
-    FGA = league_totals['FGA'].values[0]
-    FTA = league_totals['FTA'].values[0]
-    
-    TSA = FGA + 0.44 * FTA
-    TS = PTS / (2 * TSA) * 100
+    if df is not None:
+        # Assuming the last row of the table contains the league totals
+        league_totals = df.iloc[-1]  # This fetches the last row, which is often the totals row
 
-    return TS
+        # Calculate TS%
+        PTS = league_totals['PTS']
+        FGA = league_totals['FGA']
+        FTA = league_totals['FTA']
+        
+        TSA = FGA + 0.44 * FTA
+        TS_percent = PTS / (2 * TSA) * 100
+        return TS_percent
+    else:
+        # Handle the case where the table was not found
+        # You could return None or raise an exception
+        raise ValueError(f"Totals table not found for year {year}")
     
 @st.cache_data
 def fetch_data_multi_years(start_year, end_year, season_type):
