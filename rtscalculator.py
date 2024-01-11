@@ -5,38 +5,25 @@ import requests
 from st_aggrid import AgGrid
 
 @st.cache_data
+
 def fetch_data(year, season_type):
     player_stats_url = f"https://www.basketball-reference.com/{season_type}/NBA_{year}_totals.html"
     response = requests.get(player_stats_url)
     soup = BeautifulSoup(response.content, 'lxml')
-    
-    # Find the table
     table = soup.find(name='table')
-    if not table:
-        raise ValueError("No table found on the page.")
+    df = pd.read_html(str(table), flavor='lxml')[0]
 
-    # Extract headers
-    headers = [th.getText() for th in table.find_all('tr', limit=2)[0].find_all('th')]
-    headers = headers[1:]  # Remove the first header which is usually an empty cell
+    df = df.dropna(subset=['Player', 'Tm', 'MP'])  # Only drop rows where these columns are NaN
 
-    # Extract rows
-    rows = table.find_all('tr')[1:]
-    player_stats = [[td.getText() for td in row.find_all('td')] for row in rows]
-
-    # Create DataFrame
-    df = pd.DataFrame(player_stats, columns=headers)
-
-    # Convert columns to numeric and calculate per game statistics
-    for col in ['PTS', 'FGA', 'FTA', 'MP', '3PA', 'AST', 'TOV', 'TRB', 'G']:
+    for col in ['PTS', 'FGA', 'FTA', 'MP', '3PA', 'AST', 'TOV', 'TRB', 'FT%', 'G']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    # Perform division and round to 3 decimal places
+    # Override existing columns with per game numbers and round to 3 decimal places
     for col in ['FGA', 'PTS', 'AST', 'TRB', '3PA', 'FTA']:
-        df[col] = (df[col] / df['G']).round(1)
+        df[col] = (df[col] / df['G']).round(3)
 
-    # Fill NaN values
-    fill_values = {'PTS': 0, 'FGA': 0, 'FTA': 0, '3PA': 0, '3P': 0, '3P%': 0, 'AST': 0, 'TOV': 0, 'TRB': 0, 'FT%': 0, 'G': 0}
-    df.fillna(fill_values, inplace=True)
+    # Fill NaN values after performing conversions
+    df.fillna({'PTS': 0, 'FGA': 0, 'FTA': 0, '3PA': 0, '3P': 0, '3P%': 0, 'AST': 0, 'TOV': 0, 'TRB': 0, 'FT%': 0, 'G': 0}, inplace=True)
 
     return df
 @st.cache_data
