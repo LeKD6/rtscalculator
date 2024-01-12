@@ -73,7 +73,7 @@ def fetch_data_multi_years(start_year, end_year, season_type):
         df = fetch_data(year, season_type)
         df['Year'] = year  # Tagging each entry with the year
      # Fetch league-wide True Shooting Percentage (TS%)
-        TS_league = fetch_league_averages(year)
+        TS_league, TPP, FTP = fetch_league_averages(year)
 
         # Convert columns to numeric types
         df['3P%'] = pd.to_numeric(df['3P%'], errors='coerce') * 100
