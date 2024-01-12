@@ -83,8 +83,8 @@ def fetch_data_multi_years(start_year, end_year, season_type):
 
         # Calculate league-wide statistics for this specific year
         df['TS_league'] = TS_league
-        league_avg_3P = df['3P'].sum() / df['3PA'].sum() * 100
-        league_avg_FT = df['FT'].sum() / df['FTA'].sum() * 100
+        league_avg_3P = df['3P'].sum() / df['3PA'].sum() 
+        league_avg_FT = df['FT'].sum() / df['FTA'].sum() 
 
         # Calculate player metrics for this specific year
         df['TSA'] = df['FGA'] + 0.44 * df['FTA']
