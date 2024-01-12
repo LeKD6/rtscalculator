@@ -57,7 +57,7 @@ def fetch_league_averages(input_year):
         PTS = float(season_row['PTS'].values[0])
         FGA = float(season_row['FGA'].values[0])
         FTA = float(season_row['FTA'].values[0])
-        3PP = float(season_row['3P%'].values[0])
+        TPP = float(season_row['3P%'].values[0])
         FTP = float(season_row['FT%'].values[0])
         
         TSA = FGA + 0.44 * FTA
@@ -85,7 +85,7 @@ def fetch_data_multi_years(start_year, end_year, season_type):
 
         # Calculate league-wide statistics for this specific year
         df['TS_league'] = TS_league
-        df['3PP'] * 100 = league_avg_3P 
+        df['TPP'] * 100 = league_avg_3P 
         df['FTP'] * 100 = league_avg_FT 
 
         # Calculate player metrics for this specific year
