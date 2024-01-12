@@ -74,10 +74,10 @@ def fetch_data_multi_years(start_year, end_year, season_type):
         TS_league = fetch_league_averages(year)
 
         # Convert columns to numeric types
-        df['3P%'] = pd.to_numeric(df['3P%'], errors='coerce') * 100
+        df['3P%'] = pd.to_numeric(df['3P%'], errors='coerce') 
         df['3PA'] = pd.to_numeric(df['3PA'], errors='coerce')
         df['3P'] = pd.to_numeric(df['3P'], errors='coerce')
-        df['FT%'] = pd.to_numeric(df['FT%'], errors='coerce') * 100
+        df['FT%'] = pd.to_numeric(df['FT%'], errors='coerce') 
         df['FTA'] = pd.to_numeric(df['FTA'], errors='coerce')
         df['FT'] = pd.to_numeric(df['FT'], errors='coerce')
 
