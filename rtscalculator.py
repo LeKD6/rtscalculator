@@ -19,7 +19,7 @@ def fetch_data(year, season_type):
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
     # Override existing columns with per game numbers and round to 3 decimal places
-    for col in ['FGA', 'PTS', 'AST', 'TRB', '3PA', 'FTA']:
+    for col in ['FGA', 'PTS', 'AST', 'TRB', 'TOV', '3PA', 'FTA']:
         df[col] = (df[col] / df['G']).round(3)
 
     # Fill NaN values after performing conversions
