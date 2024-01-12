@@ -84,9 +84,13 @@ def fetch_data_multi_years(start_year, end_year, season_type):
         df['FT'] = pd.to_numeric(df['FT'], errors='coerce')
 
         # Calculate league-wide statistics for this specific year
+        # Calculate league-wide statistics for this specific year
         df['TS_league'] = TS_league
-        df['league_avg_3P'] = TPP * 100
-        df['league_avg_FT'] = FTP * 100
+        league_avg_3P = TPP * 100  # Assigning value to league_avg_3P here
+        df['league_avg_3P'] = league_avg_3P
+        league_avg_FT = FTP * 100  # Assigning value to league_avg_FT here
+        df['league_avg_FT'] = league_avg_FT
+
 
         # Calculate player metrics for this specific year
         df['TSA'] = df['FGA'] + 0.44 * df['FTA']
