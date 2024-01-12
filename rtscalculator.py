@@ -83,14 +83,14 @@ def fetch_data_multi_years(start_year, end_year, season_type):
 
         # Calculate league-wide statistics for this specific year
         df['TS_league'] = TS_league
-        league_avg_3P = df['3P'].sum() / df['3PA'].sum()
-        league_avg_FT = df['FT'].sum() / df['FTA'].sum()
+        league_avg_3P = df['3P'].sum() / df['3PA'].sum() * 100
+        league_avg_FT = df['FT'].sum() / df['FTA'].sum() * 100
 
         # Calculate player metrics for this specific year
         df['TSA'] = df['FGA'] + 0.44 * df['FTA']
         df['TS%'] = df['PTS'] / (2 * df['TSA']) * 100
         df['rTS%'] = df['TS%'] - TS_league
-        df['r3P%'] = (df['3P%'] - league_avg_3P)
+        df['r3P%'] = (df['3P%'] - league_avg_3P) 
         df['AST:TOV'] = df['AST'] / df['TOV'].replace(0, 1)
         df['rAST:TOV'] = df.groupby('Pos')['AST:TOV'].rank(pct=True) * 100
         df['rFT%'] = df['FT%'] - league_avg_FT
@@ -191,7 +191,7 @@ if start_year and end_year and season_display:
     query = " & ".join(query)
     filtered_df = df_player_stats.query(query) if query else df_player_stats
     filtered_df.loc[:, 'MP'] = pd.to_numeric(filtered_df['MP'], errors='coerce')
-    filtered_df = filtered_df.round({'PTS': 1, 'TS%': 1, 'rTS%': 1, '3P%': 1, 'r3P%': 1, 'rFT%': 1, 'AST:TOV': 1, 'rAST:TOV': 1})
+    filtered_df = filtered_df.round({'FGA': 1, 'FTA': 1, 'PTS': 1, '3PA': 1, 'TRB': 1, 'AST': 1, 'TS%': 1, 'rTS%': 1, '3P%': 1, 'r3P%': 1, 'rFT%': 1, 'AST:TOV': 1, 'rAST:TOV': 1})
 
     gridOptions = {
         'defaultColDef': {
