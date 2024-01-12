@@ -62,7 +62,7 @@ def fetch_league_averages(input_year):
         
         TSA = FGA + 0.44 * FTA
         TS_percent = PTS / (2 * TSA) * 100
-        return TS_percent, 3PP, FTP
+        return TS_percent, TPP, FTP
     else:
         raise ValueError(f"Data for season {season_str} not found.")
 
