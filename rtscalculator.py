@@ -57,10 +57,12 @@ def fetch_league_averages(input_year):
         PTS = float(season_row['PTS'].values[0])
         FGA = float(season_row['FGA'].values[0])
         FTA = float(season_row['FTA'].values[0])
+        3PP = float(season_row['3P%'].values[0])
+        FTP = float(season_row['FT%'].values[0])
         
         TSA = FGA + 0.44 * FTA
         TS_percent = PTS / (2 * TSA) * 100
-        return TS_percent
+        return TS_percent, 3PP, FTP
     else:
         raise ValueError(f"Data for season {season_str} not found.")
 
@@ -74,17 +76,17 @@ def fetch_data_multi_years(start_year, end_year, season_type):
         TS_league = fetch_league_averages(year)
 
         # Convert columns to numeric types
-        df['3P%'] = pd.to_numeric(df['3P%'], errors='coerce') 
+        df['3P%'] = pd.to_numeric(df['3P%'], errors='coerce') * 100
         df['3PA'] = pd.to_numeric(df['3PA'], errors='coerce')
         df['3P'] = pd.to_numeric(df['3P'], errors='coerce')
-        df['FT%'] = pd.to_numeric(df['FT%'], errors='coerce') 
+        df['FT%'] = pd.to_numeric(df['FT%'], errors='coerce') * 100
         df['FTA'] = pd.to_numeric(df['FTA'], errors='coerce')
         df['FT'] = pd.to_numeric(df['FT'], errors='coerce')
 
         # Calculate league-wide statistics for this specific year
         df['TS_league'] = TS_league
-        league_avg_3P = df['3P'].sum() / df['3PA'].sum() 
-        league_avg_FT = df['FT'].sum() / df['FTA'].sum() 
+        df['3PP'] * 100 = league_avg_3P 
+        df['FTP'] * 100 = league_avg_FT 
 
         # Calculate player metrics for this specific year
         df['TSA'] = df['FGA'] + 0.44 * df['FTA']
