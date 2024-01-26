@@ -4,8 +4,8 @@ import pandas as pd
 import requests
 from st_aggrid import AgGrid
 
-@st.cache_data
 
+@st.cache_data(ttl=86400)
 def fetch_data(year, season_type):
     player_stats_url = f"https://www.basketball-reference.com/{season_type}/NBA_{year}_totals.html"
     response = requests.get(player_stats_url)
@@ -26,7 +26,7 @@ def fetch_data(year, season_type):
     df.fillna({'PTS': 0, 'FGA': 0, 'FTA': 0, '3PA': 0, '3P': 0, '3P%': 0, 'AST': 0, 'TOV': 0, 'TRB': 0, 'FT%': 0, 'G': 0}, inplace=True)
 
     return df
-@st.cache_data
+@st.cache_data(ttl=86400)
 def fetch_league_averages(input_year):
     start_year = input_year - 1
     season_str = f"{start_year}-{str(input_year)[-2:]}"  # E.g., '2023-24'
@@ -66,7 +66,7 @@ def fetch_league_averages(input_year):
     else:
         raise ValueError(f"Data for season {season_str} not found.")
 
-@st.cache_data
+@st.cache_data(ttl=86400)
 def fetch_data_multi_years(start_year, end_year, season_type):
     all_dfs = []
     for year in range(start_year, end_year + 1):
