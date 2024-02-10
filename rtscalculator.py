@@ -100,11 +100,15 @@ def fetch_league_averages(input_year):
     else:
         raise ValueError(f"Data for season {season_str} not found.")
 
-@st.cache_data(ttl=86400)
-def fetch_data_multi_years(start_year, end_year, season_type):
+@st.cache(ttl=86400)
+def fetch_data_multi_years(start_year, end_year, season_type, stats_type):
     all_dfs = []
     for year in range(start_year, end_year + 1):
-        df = fetch_data(year, season_type)
+        if stats_type == "Per 75 Possessions":
+            df = fetch_data_per_75(year, season_type)
+        else:
+            df = fetch_data(year, season_type)
+        
         df['Year'] = year  # Tagging each entry with the year
      # Fetch league-wide True Shooting Percentage (TS%)
         TS_league, TPP, FTP = fetch_league_averages(year)
@@ -206,10 +210,7 @@ stats_type = st.selectbox("Select Stats Type:", ["Per Game", "Per 75 Possessions
 
 if start_year and end_year and season_display:
     season = "leagues" if season_display == "Regular Season" else "playoffs"
-    if stats_type == "Per 75 Possessions":
-        df_player_stats = fetch_data_per_75(start_year, season)
-    else:
-        df_player_stats = fetch_data_multi_years(start_year, end_year, season)
+    df_player_stats = fetch_data_multi_years(start_year, end_year, season, stats_type)
 
     formatted_df = format_dataframe(df_player_stats)
 
