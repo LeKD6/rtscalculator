@@ -24,11 +24,10 @@ def fetch_data_per_75(year, season_type):
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
     # Apply per 75 possessions scaling
-    for col in ['PTS', 'AST', 'TRB', '3PA', 'FTA', 'TOV']:
+    for col in ['PTS', 'FGA', 'AST', 'TRB', '3PA', 'FTA', 'TOV']:
         df[col] = (df[col] * 0.75).round(3)
 
     # Retain other columns as is
-    df['FGA'] = (df['FGA']).round(3)
     df['MP'] = (df['MP']).round(3)
     df['FT%'] = (df['FT%']).round(3)
     df['G'] = (df['G']).round(3)
