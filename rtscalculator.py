@@ -6,7 +6,6 @@ from st_aggrid import AgGrid
 
 # New function to fetch per 75 possession stats
 @st.cache(ttl=86400)
-@st.cache(ttl=86400)
 def fetch_data_per_75(year, season_type):
     if season_type == "leagues":
         url = f"https://www.basketball-reference.com/leagues/NBA_{year}_per_poss.html"
