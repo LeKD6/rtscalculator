@@ -4,7 +4,23 @@ import pandas as pd
 import requests
 from st_aggrid import AgGrid
 
-
+# New function to fetch per 75 possession stats
+@st.cache(ttl=86400)
+def fetch_data_per_75(year, season_type):
+    if season_type == "leagues":
+        url = f"https://www.basketball-reference.com/leagues/NBA_{year}_per_poss.html"
+    elif season_type == "playoffs":
+        url = f"https://www.basketball-reference.com/playoffs/NBA_{year}_per_poss.html"
+    response = requests.get(url)
+    soup = BeautifulSoup(response.content, 'lxml')
+    table = soup.find(name='table')
+    df = pd.read_html(str(table), flavor='lxml')[0]
+    df = df.dropna(subset=['Player', 'Tm', 'MP'])
+    for col in ['PTS', 'AST', 'TRB', '3PA', 'FTA', 'TOV']:
+        df[col] = pd.to_numeric(df[col], errors='coerce') * 0.75
+    df.fillna({'PTS': 0, 'AST': 0, 'TRB': 0, '3PA': 0, 'FTA': 0, 'TOV': 0}, inplace=True)
+    return df
+    
 @st.cache_data(ttl=86400)
 def fetch_data(year, season_type):
     player_stats_url = f"https://www.basketball-reference.com/{season_type}/NBA_{year}_totals.html"
@@ -168,13 +184,15 @@ start_year = st.selectbox("Select Start Year:", list(range(1980, 2025)))
 end_year = st.selectbox("Select End Year:", list(range(start_year, 2025)))
 season_display = st.selectbox("Select Season Type:", ["Regular Season", "Playoffs"])
 
-if start_year and end_year and season_display:
-    st.write(f"Selected Years: {start_year} to {end_year}")  # Display the selected years
-    season = season_type_mapping[season_display]
-    df_player_stats = fetch_data_multi_years(start_year, end_year, season)
+stats_type = st.selectbox("Select Stats Type:", ["Per Game", "Per 75 Possessions"])
 
-    
-    # Format the DataFrame
+if start_year and end_year and season_display:
+    season = "leagues" if season_display == "Regular Season" else "playoffs"
+    if stats_type == "Per 75 Possessions":
+        df_player_stats = fetch_data_per_75(start_year, season)
+    else:
+        df_player_stats = fetch_data_multi_years(start_year, end_year, season)
+
     formatted_df = format_dataframe(df_player_stats)
 
     unique_teams = df_player_stats['Tm'].dropna().unique().tolist()
