@@ -6,19 +6,37 @@ from st_aggrid import AgGrid
 
 # New function to fetch per 75 possession stats
 @st.cache(ttl=86400)
+@st.cache(ttl=86400)
 def fetch_data_per_75(year, season_type):
     if season_type == "leagues":
         url = f"https://www.basketball-reference.com/leagues/NBA_{year}_per_poss.html"
     elif season_type == "playoffs":
         url = f"https://www.basketball-reference.com/playoffs/NBA_{year}_per_poss.html"
+    
     response = requests.get(url)
     soup = BeautifulSoup(response.content, 'lxml')
     table = soup.find(name='table')
     df = pd.read_html(str(table), flavor='lxml')[0]
+    
     df = df.dropna(subset=['Player', 'Tm', 'MP'])
+
+    # Convert numerical columns to float
+    for col in ['PTS', 'FGA', 'FTA', 'MP', '3PA', 'AST', 'TOV', 'TRB', 'FT%', 'G']:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
+
+    # Apply per 75 possessions scaling
     for col in ['PTS', 'AST', 'TRB', '3PA', 'FTA', 'TOV']:
-        df[col] = pd.to_numeric(df[col], errors='coerce') * 0.75
-    df.fillna({'PTS': 0, 'AST': 0, 'TRB': 0, '3PA': 0, 'FTA': 0, 'TOV': 0}, inplace=True)
+        df[col] = (df[col] * 0.75).round(3)
+
+    # Retain other columns as is
+    df['FGA'] = (df['FGA']).round(3)
+    df['MP'] = (df['MP']).round(3)
+    df['FT%'] = (df['FT%']).round(3)
+    df['G'] = (df['G']).round(3)
+
+    # Fill NaN values after performing conversions
+    df.fillna({'PTS': 0, 'FGA': 0, 'FTA': 0, '3PA': 0, '3P': 0, '3P%': 0, 'AST': 0, 'TOV': 0, 'TRB': 0, 'FT%': 0, 'G': 0}, inplace=True)
+
     return df
     
 @st.cache_data(ttl=86400)
