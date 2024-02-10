@@ -200,8 +200,14 @@ st.sidebar.markdown("""
 """)
 
 # Allow users to select a range of years
-start_year = st.selectbox("Select Start Year:", list(range(1980, 2025)))
-end_year = st.selectbox("Select End Year:", list(range(start_year, 2025)))
+# Assuming your year range is from 1980 to 2025
+year_range = list(range(1980, 2025))
+default_start_year = 2024  # Set default start year
+default_end_year = 2024    # Set default end year
+
+# Set default values for select boxes
+start_year = st.selectbox("Select Start Year:", year_range, index=year_range.index(default_start_year))
+end_year = st.selectbox("Select End Year:", year_range, index=year_range.index(default_end_year))
 season_display = st.selectbox("Select Season Type:", ["Regular Season", "Playoffs"])
 
 stats_type = st.selectbox("Select Stats Type:", ["Per Game", "Per 75 Possessions"])
