@@ -224,7 +224,7 @@ if start_year and end_year and season_display:
 
     team = st.selectbox("Select Team:", ['Select'] + unique_teams)
     player = st.selectbox("Select Player:", ['Select'] + unique_players)
-    mp = st.slider("Select Minimum MP:", min_value=0, max_value=48)
+    MP = st.slider("Select Minimum MP:", min_value=0, max_value=48)
     formatted_df.loc[:, 'MP'] = pd.to_numeric(formatted_df['MP'], errors='coerce')
   
     
