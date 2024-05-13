@@ -233,8 +233,8 @@ if start_year and end_year and season_display:
         query.append(f"Tm == '{team}'")
     if player != 'Select':
         query.append(f'Player == "{player}"')
-    if mp > 0:
-        query.append(f"MP >= {mp}")  
+    if MP > 0:
+        query.append(f"MP >= {MP}")  
     query = " & ".join(query)
     filtered_df = df_player_stats.query(query) if query else df_player_stats
     filtered_df.loc[:, 'MP'] = pd.to_numeric(filtered_df['MP'], errors='coerce')
