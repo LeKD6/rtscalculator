@@ -224,7 +224,7 @@ if start_year and end_year and season_display:
 
     team = st.selectbox("Select Team:", ['Select'] + unique_teams)
     player = st.selectbox("Select Player:", ['Select'] + unique_players)
-    MP = st.slider("Select Minimum MP:", min_value=0, max_value=48)
+    mp = st.slider("Select Minimum MP:", min_value=0, max_value=48)
     formatted_df.loc[:, 'MP'] = pd.to_numeric(formatted_df['MP'], errors='coerce')
   
     
@@ -233,8 +233,8 @@ if start_year and end_year and season_display:
         query.append(f"Tm == '{team}'")
     if player != 'Select':
         query.append(f'Player == "{player}"')
-    if MP > 0:
-        query.append(f"MP >= {MP}")  
+    if mp > 0:
+        query.append(f"MP >= {mp}")  
     query = " & ".join(query)
     filtered_df = df_player_stats.query(query) if query else df_player_stats
     filtered_df.loc[:, 'MP'] = pd.to_numeric(filtered_df['MP'], errors='coerce')
