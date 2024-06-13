@@ -58,6 +58,8 @@ def fetch_data(year, season_type):
 
     return df
 
+from io import StringIO
+
 @st.cache_data(ttl=86400)
 def fetch_league_averages(input_year, season_type):
     url = f"https://www.basketball-reference.com/playoffs/NBA_{input_year}.html" if season_type == "playoffs" else f"https://www.basketball-reference.com/leagues/NBA_{input_year}.html"
@@ -67,7 +69,11 @@ def fetch_league_averages(input_year, season_type):
 
     # Extract advanced stats table for TS%
     table_advanced = soup.find('table', {'id': 'advanced-team'})
-    df_advanced = pd.read_html(str(table_advanced), flavor='lxml')[0]
+    if table_advanced is None:
+        st.write("No advanced stats table found.")
+        return None, None, None
+
+    df_advanced = pd.read_html(StringIO(str(table_advanced)))[0]
     
     # Debug: Write the DataFrame to Streamlit
     st.write("Advanced Stats DataFrame:")
@@ -76,14 +82,19 @@ def fetch_league_averages(input_year, season_type):
 
     df_advanced = df_advanced[df_advanced['Team'] == 'League Average']
     if df_advanced.empty:
-        raise ValueError("No 'League Average' row found in the advanced stats table.")
+        st.write("No 'League Average' row found in the advanced stats table.")
+        return None, None, None
     
     ts_col = [col for col in df_advanced.columns if 'TS%' in col][0]
     TS_percent = float(df_advanced[ts_col].values[0])
 
     # Extract per game stats table for 3P% and FT%
     table_per_game = soup.find('table', {'id': 'per_game-team'})
-    df_per_game = pd.read_html(str(table_per_game), flavor='lxml')[0]
+    if table_per_game is None:
+        st.write("No per game stats table found.")
+        return None, None, None
+
+    df_per_game = pd.read_html(StringIO(str(table_per_game)))[0]
     
     # Debug: Write the DataFrame to Streamlit
     st.write("Per Game Stats DataFrame:")
@@ -92,7 +103,8 @@ def fetch_league_averages(input_year, season_type):
 
     df_per_game = df_per_game[df_per_game['Team'] == 'League Average']
     if df_per_game.empty:
-        raise ValueError("No 'League Average' row found in the per game stats table.")
+        st.write("No 'League Average' row found in the per game stats table.")
+        return None, None, None
     
     tpp_col = [col for col in df_per_game.columns if '3P%' in col][0]
     ftp_col = [col for col in df_per_game.columns if 'FT%' in col][0]
@@ -110,7 +122,8 @@ season_type = 'playoffs'
 
 try:
     TS_percent, TPP, FTP = fetch_league_averages(year, season_type)
-    st.write(f"TS%: {TS_percent}, 3P%: {TPP}, FT%: {FTP}")
+    if TS_percent is not None:
+        st.write(f"TS%: {TS_percent}, 3P%: {TPP}, FT%: {FTP}")
 except Exception as e:
     st.write(f"Error: {e}")
 
