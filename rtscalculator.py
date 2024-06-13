@@ -4,7 +4,6 @@ import pandas as pd
 import requests
 from st_aggrid import AgGrid
 
-# New function to fetch per 75 possession stats
 @st.cache(ttl=86400)
 def fetch_data_per_75(year, season_type):
     if season_type == "leagues":
@@ -58,45 +57,46 @@ def fetch_data(year, season_type):
     df.fillna({'PTS': 0, 'FGA': 0, 'FTA': 0, '3PA': 0, '3P': 0, '3P%': 0, 'AST': 0, 'TOV': 0, 'TRB': 0, 'FT%': 0, 'G': 0}, inplace=True)
 
     return df
-@st.cache_data(ttl=86400)
-def fetch_league_averages(input_year):
-    start_year = input_year - 1
-    season_str = f"{start_year}-{str(input_year)[-2:]}"  # E.g., '2023-24'
 
-    url = f"https://www.basketball-reference.com/leagues/NBA_stats_totals.html"
+@st.cache_data(ttl=86400)
+def fetch_league_averages(input_year, season_type):
+    if season_type == "leagues":
+        url = f"https://www.basketball-reference.com/leagues/NBA_{input_year}_advanced.html"
+    else:
+        url = f"https://www.basketball-reference.com/playoffs/NBA_{input_year}.html"
+    
     response = requests.get(url)
     soup = BeautifulSoup(response.content, 'lxml')
 
-    table = soup.find('table')
+    if season_type == "leagues":
+        table = soup.find('table', {'id': 'advanced_stats'})
+    else:
+        table = soup.find('table', {'id': 'team-stats-per_game'})
+
     if not table:
         raise ValueError("No table found on the page.")
 
-    # Extracting header
-    header_row = table.find('thead').findAll('tr')[-1]  # Targeting the last row in the table header
-    headers = [th.getText() for th in header_row.findAll('th')]
+    # Extract data from the table
+    df = pd.read_html(str(table), flavor='lxml')[0]
 
-    # Extracting data rows
-    data_rows = table.find('tbody').findAll('tr')
-    data = [[td.getText() for td in row.findAll(['th', 'td'])] for row in data_rows]
-
-    # Create DataFrame
-    stats_df = pd.DataFrame(data, columns=headers)
-
-    # Find the row for the specific season
-    season_row = stats_df[stats_df['Season'].str.startswith(season_str)]
-    if not season_row.empty:
-        # Extract the totals for PTS, FGA, and FTA
-        PTS = float(season_row['PTS'].values[0])
-        FGA = float(season_row['FGA'].values[0])
-        FTA = float(season_row['FTA'].values[0])
-        TPP = float(season_row['3P%'].values[0])
-        FTP = float(season_row['FT%'].values[0])
-        
-        TSA = FGA + 0.44 * FTA
-        TS_percent = PTS / (2 * TSA) * 100
-        return TS_percent, TPP, FTP
+    if season_type == "leagues":
+        df = df[df['Unnamed: 1_level_0'] == 'League Average']
+        PTS = float(df['Unnamed: 26_level_0']['PTS'])
+        FGA = float(df['Unnamed: 9_level_0']['FGA'])
+        FTA = float(df['Unnamed: 14_level_0']['FTA'])
+        TPP = float(df['Unnamed: 13_level_0']['3P%'])
+        FTP = float(df['Unnamed: 22_level_0']['FT%'])
     else:
-        raise ValueError(f"Data for season {season_str} not found.")
+        df = df[df['Tm'] == 'League Average']
+        PTS = float(df['PTS'])
+        FGA = float(df['FGA'])
+        FTA = float(df['FTA'])
+        TPP = float(df['3P%'])
+        FTP = float(df['FT%'])
+    
+    TSA = FGA + 0.44 * FTA
+    TS_percent = PTS / (2 * TSA) * 100
+    return TS_percent, TPP, FTP
 
 @st.cache(ttl=86400)
 def fetch_data_multi_years(start_year, end_year, season_type, stats_type):
@@ -108,8 +108,7 @@ def fetch_data_multi_years(start_year, end_year, season_type, stats_type):
             df = fetch_data(year, season_type)
         
         df['Year'] = year  # Tagging each entry with the year
-     # Fetch league-wide True Shooting Percentage (TS%)
-        TS_league, TPP, FTP = fetch_league_averages(year)
+        TS_league, TPP, FTP = fetch_league_averages(year, season_type)
 
         # Convert columns to numeric types
         df['3P%'] = pd.to_numeric(df['3P%'], errors='coerce') * 100
@@ -120,13 +119,11 @@ def fetch_data_multi_years(start_year, end_year, season_type, stats_type):
         df['FT'] = pd.to_numeric(df['FT'], errors='coerce')
 
         # Calculate league-wide statistics for this specific year
-        # Calculate league-wide statistics for this specific year
         df['TS_league'] = TS_league
         league_avg_3P = TPP * 100  # Assigning value to league_avg_3P here
         df['league_avg_3P'] = league_avg_3P
         league_avg_FT = FTP * 100  # Assigning value to league_avg_FT here
         df['league_avg_FT'] = league_avg_FT
-
 
         # Calculate player metrics for this specific year
         df['TSA'] = df['FGA'] + 0.44 * df['FTA']
@@ -143,14 +140,14 @@ def fetch_data_multi_years(start_year, end_year, season_type, stats_type):
     combined_df = pd.concat(all_dfs, ignore_index=True)
     # Calculate the total number of games played across all years for a specific player
     total_games = combined_df.groupby('Player')['G'].sum()
-# Calculate the weighted average for each column of interest
+    # Calculate the weighted average for each column of interest
     weighted_avg_rows = []
     for player, df_player in combined_df.groupby('Player'):
         weighted_avg_row = {}
         for col in ['PTS', 'TS%', 'rTS%', '3P%', 'r3P%', 'AST:TOV', 'rAST:TOV', 'FGA', '3PA', 'FTA', 'FT%', 'rFT%', 'AST', 'TRB']:
             weighted_avg_row[col] = (df_player[col] * df_player['G']).sum() / total_games[player]
         
-    # Adding identifiers for the average row
+        # Adding identifiers for the average row
         weighted_avg_row['Player'] = player
         weighted_avg_row['Tm'] = 'Average'
         weighted_avg_row['Year'] = 'Average'
