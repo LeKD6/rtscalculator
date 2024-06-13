@@ -65,15 +65,26 @@ def fetch_league_averages(input_year, season_type):
     response = requests.get(url)
     soup = BeautifulSoup(response.content, 'lxml')
 
+    # Find all tables in the page
+    tables = soup.find_all('table')
+    table_ids = [table['id'] for table in tables if 'id' in table.attrs]
+
+    # Find the correct table IDs for advanced stats and per game stats
+    advanced_table_id = next((table_id for table_id in table_ids if 'advanced' in table_id), None)
+    per_game_table_id = next((table_id for table_id in table_ids if 'per_game' in table_id), None)
+
+    if not advanced_table_id or not per_game_table_id:
+        raise ValueError("Required tables not found on the page.")
+
     # Advanced stats table for TS%
-    table_advanced = soup.find('table', {'id': 'advanced_stats'})
+    table_advanced = soup.find('table', {'id': advanced_table_id})
     df_advanced = pd.read_html(str(table_advanced), flavor='lxml')[0]
     df_advanced = df_advanced[df_advanced.iloc[:, 0] == 'League Average']
     ts_col = [col for col in df_advanced.columns if 'TS%' in col][0]
     TS_percent = float(df_advanced[ts_col].values[0])
 
     # Per game stats table for 3P% and FT%
-    table_per_game = soup.find('table', {'id': 'team-stats-per_game'})
+    table_per_game = soup.find('table', {'id': per_game_table_id})
     df_per_game = pd.read_html(str(table_per_game), flavor='lxml')[0]
     df_per_game = df_per_game[df_per_game['Team'] == 'League Average']
     tpp_col = [col for col in df_per_game.columns if '3P%' in col][0]
