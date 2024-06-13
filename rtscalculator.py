@@ -73,7 +73,7 @@ def fetch_league_averages(input_year, season_type):
     TS_percent = float(df_advanced[ts_col].values[0])
 
     # Extract per game stats table for 3P% and FT%
-    table_per_game = soup.find('table', {'id': 'div_per_game-team'})
+    table_per_game = soup.find('table', {'id': 'per_game-team'})
     df_per_game = pd.read_html(str(table_per_game), flavor='lxml')[0]
     df_per_game = df_per_game[df_per_game['Team'] == 'League Average']
     tpp_col = [col for col in df_per_game.columns if '3P%' in col][0]
@@ -82,6 +82,9 @@ def fetch_league_averages(input_year, season_type):
     FTP = float(df_per_game[ftp_col].values[0])
 
     return TS_percent, TPP, FTP
+
+# Example usage
+print(fetch_league_averages(2024, 'playoffs'))
 
 @st.cache(ttl=86400)
 def fetch_data_multi_years(start_year, end_year, season_type, stats_type):
