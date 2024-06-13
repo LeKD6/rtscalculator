@@ -58,61 +58,43 @@ def fetch_data(year, season_type):
 
     return df
 
-from io import StringIO
-
-import streamlit as st
-from bs4 import BeautifulSoup
-import pandas as pd
-import requests
-
 @st.cache_data(ttl=86400)
 def fetch_league_averages(input_year, season_type):
-    url = f"https://www.basketball-reference.com/playoffs/NBA_{input_year}.html" if season_type == "playoffs" else f"https://www.basketball-reference.com/leagues/NBA_{input_year}.html"
+    if season_type == "playoffs":
+        url_advanced = f"https://www.basketball-reference.com/playoffs/NBA_{input_year}.html#advanced-team"
+        url_per_game = f"https://www.basketball-reference.com/playoffs/NBA_{input_year}.html#per_game-team"
+    else:
+        url_advanced = f"https://www.basketball-reference.com/leagues/NBA_{input_year}.html#advanced-team"
+        url_per_game = f"https://www.basketball-reference.com/leagues/NBA_{input_year}.html#per_game-team"
     
-    response = requests.get(url)
+    response = requests.get(url_advanced)
     soup = BeautifulSoup(response.content, 'lxml')
 
-    # Extract all tables
-    tables = soup.find_all('table')
-    
-    advanced_stats_table = None
-    per_game_stats_table = None
+    # Extract advanced stats table for TS%
+    table_advanced = soup.find('table', {'id': 'advanced-team'})
+    if not table_advanced:
+        raise ValueError("No advanced stats table found on the page.")
 
-    for table in tables:
-        table_html = str(table)
-        if 'Advanced Stats' in table_html:
-            advanced_stats_table = table_html
-        if 'Per Game Stats' in table_html:
-            per_game_stats_table = table_html
-
-    if not advanced_stats_table or not per_game_stats_table:
-        st.write("Could not find the required tables.")
-        return None, None, None
-
-    # Read the advanced stats table
-    df_advanced = pd.read_html(advanced_stats_table)[0]
-    st.write("Advanced Stats DataFrame:")
-    st.write(df_advanced.head())
-    st.write(df_advanced.tail())
-
+    df_advanced = pd.read_html(str(table_advanced), flavor='lxml')[0]
     df_advanced = df_advanced[df_advanced['Team'] == 'League Average']
     if df_advanced.empty:
-        st.write("No 'League Average' row found in the advanced stats table.")
-        return None, None, None
+        raise ValueError("No 'League Average' row found in the advanced stats table.")
     
     ts_col = [col for col in df_advanced.columns if 'TS%' in col][0]
     TS_percent = float(df_advanced[ts_col].values[0])
 
-    # Read the per game stats table
-    df_per_game = pd.read_html(per_game_stats_table)[0]
-    st.write("Per Game Stats DataFrame:")
-    st.write(df_per_game.head())
-    st.write(df_per_game.tail())
+    # Fetch and parse per game stats table
+    response = requests.get(url_per_game)
+    soup = BeautifulSoup(response.content, 'lxml')
 
+    table_per_game = soup.find('table', {'id': 'per_game-team'})
+    if not table_per_game:
+        raise ValueError("No per game stats table found on the page.")
+
+    df_per_game = pd.read_html(str(table_per_game), flavor='lxml')[0]
     df_per_game = df_per_game[df_per_game['Team'] == 'League Average']
     if df_per_game.empty:
-        st.write("No 'League Average' row found in the per game stats table.")
-        return None, None, None
+        raise ValueError("No 'League Average' row found in the per game stats table.")
     
     tpp_col = [col for col in df_per_game.columns if '3P%' in col][0]
     ftp_col = [col for col in df_per_game.columns if 'FT%' in col][0]
@@ -120,20 +102,6 @@ def fetch_league_averages(input_year, season_type):
     FTP = float(df_per_game[ftp_col].values[0])
 
     return TS_percent, TPP, FTP
-
-# Streamlit app to display the results
-st.title("NBA Advanced Stats Calculator")
-
-# Example usage
-year = 2024
-season_type = 'playoffs'
-
-try:
-    TS_percent, TPP, FTP = fetch_league_averages(year, season_type)
-    if TS_percent is not None:
-        st.write(f"TS%: {TS_percent}, 3P%: {TPP}, FT%: {FTP}")
-except Exception as e:
-    st.write(f"Error: {e}")
     
 @st.cache(ttl=86400)
 def fetch_data_multi_years(start_year, end_year, season_type, stats_type):
