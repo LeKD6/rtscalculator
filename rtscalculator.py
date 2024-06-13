@@ -60,6 +60,11 @@ def fetch_data(year, season_type):
 
 from io import StringIO
 
+import streamlit as st
+from bs4 import BeautifulSoup
+import pandas as pd
+import requests
+
 @st.cache_data(ttl=86400)
 def fetch_league_averages(input_year, season_type):
     url = f"https://www.basketball-reference.com/playoffs/NBA_{input_year}.html" if season_type == "playoffs" else f"https://www.basketball-reference.com/leagues/NBA_{input_year}.html"
@@ -67,22 +72,25 @@ def fetch_league_averages(input_year, season_type):
     response = requests.get(url)
     soup = BeautifulSoup(response.content, 'lxml')
 
-    # Debug: Print all available tables
-    st.write("All tables in the page:")
+    # Extract all tables
     tables = soup.find_all('table')
-    for i, table in enumerate(tables):
-        st.write(f"Table {i}: {table.get('id')}")
-        st.write(table)
+    
+    advanced_stats_table = None
+    per_game_stats_table = None
 
-    # Extract advanced stats table for TS%
-    table_advanced = soup.find('table', {'id': 'advanced-team'})
-    if table_advanced is None:
-        st.write("No advanced stats table found.")
+    for table in tables:
+        table_html = str(table)
+        if 'Advanced Stats' in table_html:
+            advanced_stats_table = table_html
+        if 'Per Game Stats' in table_html:
+            per_game_stats_table = table_html
+
+    if not advanced_stats_table or not per_game_stats_table:
+        st.write("Could not find the required tables.")
         return None, None, None
 
-    df_advanced = pd.read_html(StringIO(str(table_advanced)))[0]
-    
-    # Debug: Write the DataFrame to Streamlit
+    # Read the advanced stats table
+    df_advanced = pd.read_html(advanced_stats_table)[0]
     st.write("Advanced Stats DataFrame:")
     st.write(df_advanced.head())
     st.write(df_advanced.tail())
@@ -95,15 +103,8 @@ def fetch_league_averages(input_year, season_type):
     ts_col = [col for col in df_advanced.columns if 'TS%' in col][0]
     TS_percent = float(df_advanced[ts_col].values[0])
 
-    # Extract per game stats table for 3P% and FT%
-    table_per_game = soup.find('table', {'id': 'per_game-team'})
-    if table_per_game is None:
-        st.write("No per game stats table found.")
-        return None, None, None
-
-    df_per_game = pd.read_html(StringIO(str(table_per_game)))[0]
-    
-    # Debug: Write the DataFrame to Streamlit
+    # Read the per game stats table
+    df_per_game = pd.read_html(per_game_stats_table)[0]
     st.write("Per Game Stats DataFrame:")
     st.write(df_per_game.head())
     st.write(df_per_game.tail())
@@ -133,7 +134,7 @@ try:
         st.write(f"TS%: {TS_percent}, 3P%: {TPP}, FT%: {FTP}")
 except Exception as e:
     st.write(f"Error: {e}")
-
+    
 @st.cache(ttl=86400)
 def fetch_data_multi_years(start_year, end_year, season_type, stats_type):
     all_dfs = []
