@@ -67,6 +67,13 @@ def fetch_league_averages(input_year, season_type):
     response = requests.get(url)
     soup = BeautifulSoup(response.content, 'lxml')
 
+    # Debug: Print all available tables
+    st.write("All tables in the page:")
+    tables = soup.find_all('table')
+    for i, table in enumerate(tables):
+        st.write(f"Table {i}: {table.get('id')}")
+        st.write(table)
+
     # Extract advanced stats table for TS%
     table_advanced = soup.find('table', {'id': 'advanced-team'})
     if table_advanced is None:
