@@ -60,43 +60,27 @@ def fetch_data(year, season_type):
 
 @st.cache_data(ttl=86400)
 def fetch_league_averages(input_year, season_type):
-    if season_type == "leagues":
-        url = f"https://www.basketball-reference.com/leagues/NBA_{input_year}_advanced.html"
-    else:
-        url = f"https://www.basketball-reference.com/playoffs/NBA_{input_year}.html"
+    url = f"https://www.basketball-reference.com/playoffs/NBA_{input_year}.html" if season_type == "playoffs" else f"https://www.basketball-reference.com/leagues/NBA_{input_year}.html"
     
     response = requests.get(url)
     soup = BeautifulSoup(response.content, 'lxml')
 
-    if season_type == "leagues":
-        table = soup.find('table', {'id': 'advanced_stats'})
-    else:
-        table = soup.find('table', {'id': 'team-stats-per_game'})
+    # Advanced stats table for TS%
+    table_advanced = soup.find('table', {'id': 'advanced_stats'})
+    df_advanced = pd.read_html(str(table_advanced), flavor='lxml')[0]
+    df_advanced = df_advanced[df_advanced.iloc[:, 0] == 'League Average']
+    ts_col = [col for col in df_advanced.columns if 'TS%' in col][0]
+    TS_percent = float(df_advanced[ts_col].values[0])
 
-    if not table:
-        raise ValueError("No table found on the page.")
+    # Per game stats table for 3P% and FT%
+    table_per_game = soup.find('table', {'id': 'team-stats-per_game'})
+    df_per_game = pd.read_html(str(table_per_game), flavor='lxml')[0]
+    df_per_game = df_per_game[df_per_game['Team'] == 'League Average']
+    tpp_col = [col for col in df_per_game.columns if '3P%' in col][0]
+    ftp_col = [col for col in df_per_game.columns if 'FT%' in col][0]
+    TPP = float(df_per_game[tpp_col].values[0])
+    FTP = float(df_per_game[ftp_col].values[0])
 
-    # Extract data from the table
-    df = pd.read_html(str(table), flavor='lxml')[0]
-
-    # Adjust the headers based on the table structure
-    if season_type == "leagues":
-        df = df[df['Unnamed: 1_level_0'] == 'League Average']
-        PTS = float(df['Unnamed: 26_level_0']['PTS'])
-        FGA = float(df['Unnamed: 9_level_0']['FGA'])
-        FTA = float(df['Unnamed: 14_level_0']['FTA'])
-        TPP = float(df['Unnamed: 13_level_0']['3P%'])
-        FTP = float(df['Unnamed: 22_level_0']['FT%'])
-    else:
-        df = df[df['Team'] == 'League Average']
-        PTS = float(df['PTS'])
-        FGA = float(df['FGA'])
-        FTA = float(df['FTA'])
-        TPP = float(df['3P%'])
-        FTP = float(df['FT%'])
-    
-    TSA = FGA + 0.44 * FTA
-    TS_percent = PTS / (2 * TSA) * 100
     return TS_percent, TPP, FTP
 
 @st.cache(ttl=86400)
