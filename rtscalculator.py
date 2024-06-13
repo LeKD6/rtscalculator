@@ -79,6 +79,7 @@ def fetch_league_averages(input_year, season_type):
     # Extract data from the table
     df = pd.read_html(str(table), flavor='lxml')[0]
 
+    # Adjust the headers based on the table structure
     if season_type == "leagues":
         df = df[df['Unnamed: 1_level_0'] == 'League Average']
         PTS = float(df['Unnamed: 26_level_0']['PTS'])
@@ -87,7 +88,7 @@ def fetch_league_averages(input_year, season_type):
         TPP = float(df['Unnamed: 13_level_0']['3P%'])
         FTP = float(df['Unnamed: 22_level_0']['FT%'])
     else:
-        df = df[df['Tm'] == 'League Average']
+        df = df[df['Team'] == 'League Average']
         PTS = float(df['PTS'])
         FGA = float(df['FGA'])
         FTA = float(df['FTA'])
