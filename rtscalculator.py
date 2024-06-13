@@ -67,15 +67,8 @@ def fetch_league_averages(input_year, season_type):
         url_advanced = f"https://www.basketball-reference.com/leagues/NBA_{input_year}.html#advanced-team"
         url_per_game = f"https://www.basketball-reference.com/leagues/NBA_{input_year}.html#per_game-team"
     
-    response = requests.get(url_advanced)
-    soup = BeautifulSoup(response.content, 'lxml')
-
-    # Extract advanced stats table for TS%
-    table_advanced = soup.find('table', {'id': 'advanced-team'})
-    if not table_advanced:
-        raise ValueError("No advanced stats table found on the page.")
-
-    df_advanced = pd.read_html(str(table_advanced), flavor='lxml')[0]
+    # Fetch and parse the advanced stats table for TS%
+    df_advanced = pd.read_html(url_advanced, match='Advanced Stats')[0]
     df_advanced = df_advanced[df_advanced['Team'] == 'League Average']
     if df_advanced.empty:
         raise ValueError("No 'League Average' row found in the advanced stats table.")
@@ -83,15 +76,8 @@ def fetch_league_averages(input_year, season_type):
     ts_col = [col for col in df_advanced.columns if 'TS%' in col][0]
     TS_percent = float(df_advanced[ts_col].values[0])
 
-    # Fetch and parse per game stats table
-    response = requests.get(url_per_game)
-    soup = BeautifulSoup(response.content, 'lxml')
-
-    table_per_game = soup.find('table', {'id': 'per_game-team'})
-    if not table_per_game:
-        raise ValueError("No per game stats table found on the page.")
-
-    df_per_game = pd.read_html(str(table_per_game), flavor='lxml')[0]
+    # Fetch and parse the per game stats table for 3P% and FT%
+    df_per_game = pd.read_html(url_per_game, match='Per Game Stats')[0]
     df_per_game = df_per_game[df_per_game['Team'] == 'League Average']
     if df_per_game.empty:
         raise ValueError("No 'League Average' row found in the per game stats table.")
