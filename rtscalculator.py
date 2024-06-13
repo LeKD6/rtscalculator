@@ -60,30 +60,42 @@ def fetch_data(year, season_type):
 
 @st.cache_data(ttl=86400)
 def fetch_league_averages(input_year, season_type):
-    if season_type == "playoffs":
-        url_advanced = f"https://www.basketball-reference.com/playoffs/NBA_{input_year}.html#advanced-team"
-        url_per_game = f"https://www.basketball-reference.com/playoffs/NBA_{input_year}.html#per_game-team"
-    else:
-        url_advanced = f"https://www.basketball-reference.com/leagues/NBA_{input_year}.html#advanced-team"
-        url_per_game = f"https://www.basketball-reference.com/leagues/NBA_{input_year}.html#per_game-team"
+    url = f"https://www.basketball-reference.com/playoffs/NBA_{input_year}.html" if season_type == "playoffs" else f"https://www.basketball-reference.com/leagues/NBA_{input_year}.html"
     
-    # Fetch and parse the advanced stats table for TS%
-    df_advanced = pd.read_html(url_advanced, match='Advanced Stats')[0]
+    response = requests.get(url)
+    soup = BeautifulSoup(response.content, 'lxml')
+
+    # Extract advanced stats table for TS%
+    advanced_table = soup.find('table', {'id': 'advanced-team'})
+    if not advanced_table:
+        raise ValueError("No advanced stats table found on the page.")
+
+    df_advanced = pd.read_html(str(advanced_table))[0]
+    if isinstance(df_advanced.columns, pd.MultiIndex):
+        df_advanced.columns = df_advanced.columns.droplevel(0)  # Drop the top level of the multi-index if present
     df_advanced = df_advanced[df_advanced['Team'] == 'League Average']
     if df_advanced.empty:
         raise ValueError("No 'League Average' row found in the advanced stats table.")
     
-    ts_col = [col for col in df_advanced.columns if 'TS%' in col][0]
+    # Use the correct data-stat for True Shooting Percentage (TS%)
+    ts_col = 'ts_pct'
     TS_percent = float(df_advanced[ts_col].values[0])
 
-    # Fetch and parse the per game stats table for 3P% and FT%
-    df_per_game = pd.read_html(url_per_game, match='Per Game Stats')[0]
+    # Extract per game stats table for 3P% and FT%
+    per_game_table = soup.find('table', {'id': 'per_game-team'})
+    if not per_game_table:
+        raise ValueError("No per game stats table found on the page.")
+
+    df_per_game = pd.read_html(str(per_game_table))[0]
+    if isinstance(df_per_game.columns, pd.MultiIndex):
+        df_per_game.columns = df_per_game.columns.droplevel(0)  # Drop the top level of the multi-index if present
     df_per_game = df_per_game[df_per_game['Team'] == 'League Average']
     if df_per_game.empty:
         raise ValueError("No 'League Average' row found in the per game stats table.")
     
-    tpp_col = [col for col in df_per_game.columns if '3P%' in col][0]
-    ftp_col = [col for col in df_per_game.columns if 'FT%' in col][0]
+    # Use the correct data-stat for 3P% and FT%
+    tpp_col = 'fg3_pct'
+    ftp_col = 'ft_pct'
     TPP = float(df_per_game[tpp_col].values[0])
     FTP = float(df_per_game[ftp_col].values[0])
 
