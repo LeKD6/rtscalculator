@@ -248,11 +248,15 @@ if start_year and end_year and season_display:
 
     unique_teams = df_player_stats['Tm'].dropna().unique().tolist()
     unique_players = df_player_stats['Player'].dropna().unique().tolist()
+     # Calculate MPG (Minutes per Game)
+    df_player_stats['MPG'] = df_player_stats['MP'] / df_player_stats['G']
 
+    # Minimum Minutes Played slider
+    
 
     team = st.selectbox("Select Team:", ['Select'] + unique_teams)
     player = st.selectbox("Select Player:", ['Select'] + unique_players)
-    mp = st.slider("Select Minimum MP:", min_value=0, max_value=48)
+    mp = st.slider("Select Minimum MPG:", min_value=0, max_value=48, value=0)
     formatted_df.loc[:, 'MP'] = pd.to_numeric(formatted_df['MP'], errors='coerce')
   
     
