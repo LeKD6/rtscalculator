@@ -2,6 +2,7 @@ import streamlit as st
 from bs4 import BeautifulSoup
 import pandas as pd
 import requests
+from urllib.request import urlopen
 from st_aggrid import AgGrid
 
 @st.cache(ttl=86400)
@@ -58,61 +59,91 @@ def fetch_data(year, season_type):
 
     return df
 
-import streamlit as st
-from urllib.request import urlopen
-from bs4 import BeautifulSoup
-import pandas as pd
-import requests
-
 @st.cache_data(ttl=86400)
 def fetch_league_averages(input_year, season_type):
-    url = f"https://www.basketball-reference.com/playoffs/NBA_{input_year}.html" if season_type == "playoffs" else f"https://www.basketball-reference.com/leagues/NBA_{input_year}.html"
-    
-    response = requests.get(url)
-    if response.status_code != 200:
-        raise ValueError(f"Failed to fetch data from {url}")
-    
-    soup = BeautifulSoup(response.content, 'html.parser')
-    
-    # Extract advanced stats table for TS%
-    advanced_selector = 'advanced-team'
-    advanced_table = soup.find('table', {'id': advanced_selector})
-    if not advanced_table:
-        raise ValueError("No advanced stats table found on the page.")
-    
-    df_advanced = pd.read_html(str(advanced_table))[0]
-    if isinstance(df_advanced.columns, pd.MultiIndex):
-        df_advanced.columns = df_advanced.columns.droplevel(0)  # Drop the top level of the multi-index if present
-    df_advanced = df_advanced[df_advanced['Team'] == 'League Average']
-    if df_advanced.empty:
-        raise ValueError("No 'League Average' row found in the advanced stats table.")
-    
-    # Use the correct data-stat for True Shooting Percentage (TS%)
-    ts_col = 'TS%'
-    TS_percent = float(df_advanced[ts_col].values[0])
+    if season_type == "playoffs":
+        url = f"https://www.basketball-reference.com/playoffs/NBA_{input_year}.html"
+        
+        response = requests.get(url)
+        if response.status_code != 200:
+            raise ValueError(f"Failed to fetch data from {url}")
+        
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        # Extract advanced stats table for TS%
+        advanced_selector = 'advanced-team'
+        advanced_table = soup.find('table', {'id': advanced_selector})
+        if not advanced_table:
+            raise ValueError("No advanced stats table found on the page.")
+        
+        df_advanced = pd.read_html(str(advanced_table))[0]
+        if isinstance(df_advanced.columns, pd.MultiIndex):
+            df_advanced.columns = df_advanced.columns.droplevel(0)  # Drop the top level of the multi-index if present
+        df_advanced = df_advanced[df_advanced['Team'] == 'League Average']
+        if df_advanced.empty:
+            raise ValueError("No 'League Average' row found in the advanced stats table.")
+        
+        # Use the correct data-stat for True Shooting Percentage (TS%)
+        ts_col = 'TS%'
+        TS_percent = float(df_advanced[ts_col].values[0])
 
-    # Extract per game stats table for 3P% and FT%
-    per_game_selector = 'per_game-team'
-    per_game_table = soup.find('table', {'id': per_game_selector})
-    if not per_game_table:
-        raise ValueError("No per game stats table found on the page.")
-    
-    df_per_game = pd.read_html(str(per_game_table))[0]
-    if isinstance(df_per_game.columns, pd.MultiIndex):
-        df_per_game.columns = df_per_game.columns.droplevel(0)  # Drop the top level of the multi-index if present
-    df_per_game = df_per_game[df_per_game['Team'] == 'League Average']
-    if df_per_game.empty:
-        raise ValueError("No 'League Average' row found in the per game stats table.")
-    
-    # Use the correct data-stat for 3P% and FT%
-    TPP = float(df_per_game['3P%'].values[0])
-    FTP = float(df_per_game['FT%'].values[0])
+        # Extract per game stats table for 3P% and FT%
+        per_game_selector = 'per_game-team'
+        per_game_table = soup.find('table', {'id': per_game_selector})
+        if not per_game_table:
+            raise ValueError("No per game stats table found on the page.")
+        
+        df_per_game = pd.read_html(str(per_game_table))[0]
+        if isinstance(df_per_game.columns, pd.MultiIndex):
+            df_per_game.columns = df_per_game.columns.droplevel(0)  # Drop the top level of the multi-index if present
+        df_per_game = df_per_game[df_per_game['Team'] == 'League Average']
+        if df_per_game.empty:
+            raise ValueError("No 'League Average' row found in the per game stats table.")
+        
+        # Use the correct data-stat for 3P% and FT%
+        TPP = float(df_per_game['3P%'].values[0])
+        FTP = float(df_per_game['FT%'].values[0])
 
-    return TS_percent, TPP, FTP
+        return TS_percent, TPP, FTP
+    else:
+        start_year = input_year - 1
+        season_str = f"{start_year}-{str(input_year)[-2:]}"  # E.g., '2023-24'
 
+        url = f"https://www.basketball-reference.com/leagues/NBA_stats_totals.html"
+        response = requests.get(url)
+        soup = BeautifulSoup(response.content, 'lxml')
 
+        table = soup.find('table')
+        if not table:
+            raise ValueError("No table found on the page.")
 
-    
+        # Extracting header
+        header_row = table.find('thead').findAll('tr')[-1]  # Targeting the last row in the table header
+        headers = [th.getText() for th in header_row.findAll('th')]
+
+        # Extracting data rows
+        data_rows = table.find('tbody').findAll('tr')
+        data = [[td.getText() for td in row.findAll(['th', 'td'])] for row in data_rows]
+
+        # Create DataFrame
+        stats_df = pd.DataFrame(data, columns=headers)
+
+        # Find the row for the specific season
+        season_row = stats_df[stats_df['Season'].str.startswith(season_str)]
+        if not season_row.empty:
+            # Extract the totals for PTS, FGA, and FTA
+            PTS = float(season_row['PTS'].values[0])
+            FGA = float(season_row['FGA'].values[0])
+            FTA = float(season_row['FTA'].values[0])
+            TPP = float(season_row['3P%'].values[0])
+            FTP = float(season_row['FT%'].values[0])
+            
+            TSA = FGA + 0.44 * FTA
+            TS_percent = PTS / (2 * TSA) * 100
+            return TS_percent, TPP, FTP
+        else:
+            raise ValueError(f"Data for season {season_str} not found.")
+
 @st.cache(ttl=86400)
 def fetch_data_multi_years(start_year, end_year, season_type, stats_type):
     all_dfs = []
