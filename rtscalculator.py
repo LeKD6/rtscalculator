@@ -73,7 +73,6 @@ def fetch_league_averages(input_year, season_type):
             raise ValueError("No 'League Average' row found in the advanced stats table.")
         
         # Check the actual column names and select the appropriate one
-        st.write(df_advanced.columns)
         ts_col = 'TS%' if 'TS%' in df_advanced.columns else 'ts_pct'
         TS_percent = float(df_advanced[ts_col].values[0]) * 100
 
