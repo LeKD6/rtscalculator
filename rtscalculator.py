@@ -75,7 +75,7 @@ def fetch_league_averages(input_year, season_type):
         # Check the actual column names and select the appropriate one
         st.write(df_advanced.columns)
         ts_col = 'TS%' if 'TS%' in df_advanced.columns else 'ts_pct'
-        TS_percent = float(df_advanced[ts_col].values[0])
+        TS_percent = float(df_advanced[ts_col].values[0]) * 100
 
         # Fetch and parse the per game stats table
         df_per_game = pd.read_html(url_per_game, match='Per Game Stats')[0]
