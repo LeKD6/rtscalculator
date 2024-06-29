@@ -243,13 +243,13 @@ stats_type = st.selectbox("Select Stats Type:", ["Per Game", "Per 75 Possessions
 if start_year and end_year and season_display:
     season = "leagues" if season_display == "Regular Season" else "playoffs"
     df_player_stats = fetch_data_multi_years(start_year, end_year, season, stats_type)
-
+    df_player_stats['MPG'] = df_player_stats['MP'] / df_player_stats['G']
     formatted_df = format_dataframe(df_player_stats)
 
     unique_teams = df_player_stats['Tm'].dropna().unique().tolist()
     unique_players = df_player_stats['Player'].dropna().unique().tolist()
      # Calculate MPG (Minutes per Game)
-    df_player_stats['MPG'] = df_player_stats['MP'] / df_player_stats['G']
+    
 
     # Minimum Minutes Played slider
     
@@ -257,7 +257,7 @@ if start_year and end_year and season_display:
     team = st.selectbox("Select Team:", ['Select'] + unique_teams)
     player = st.selectbox("Select Player:", ['Select'] + unique_players)
     mp = st.slider("Select Minimum MPG:", min_value=0, max_value=48, value=0)
-    formatted_df.loc[:, 'MP'] = pd.to_numeric(formatted_df['MP'], errors='coerce')
+    formatted_df.loc[:, 'MPG'] = pd.to_numeric(formatted_df['MPG'], errors='coerce')
   
     
     query = []
