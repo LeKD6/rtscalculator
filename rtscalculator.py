@@ -58,48 +58,55 @@ def fetch_data(year, season_type):
 
     return df
 
+import streamlit as st
+from urllib.request import urlopen
+import pandas as pd
+
 @st.cache_data(ttl=86400)
 def fetch_league_averages(input_year, season_type):
     url = f"https://www.basketball-reference.com/playoffs/NBA_{input_year}.html" if season_type == "playoffs" else f"https://www.basketball-reference.com/leagues/NBA_{input_year}.html"
     
-    response = requests.get(url)
-    soup = BeautifulSoup(response.content, 'lxml')
-
-    # Extract advanced stats table for TS%
-    advanced_table = soup.find('table', {'id': 'advanced-team'})
-    if not advanced_table:
+    # collect HTML data
+    html = urlopen(url)
+    
+    # Use pandas to read all tables from the page
+    all_tables = pd.read_html(html, flavor='lxml')
+    
+    # Extract the advanced stats table
+    df_advanced = None
+    for table in all_tables:
+        if 'Team' in table.columns and 'ts_pct' in table.columns:
+            df_advanced = table
+            break
+    if df_advanced is None:
         raise ValueError("No advanced stats table found on the page.")
-
-    df_advanced = pd.read_html(str(advanced_table))[0]
-    if isinstance(df_advanced.columns, pd.MultiIndex):
-        df_advanced.columns = df_advanced.columns.droplevel(0)  # Drop the top level of the multi-index if present
+    
     df_advanced = df_advanced[df_advanced['Team'] == 'League Average']
     if df_advanced.empty:
         raise ValueError("No 'League Average' row found in the advanced stats table.")
     
     # Use the correct data-stat for True Shooting Percentage (TS%)
-    ts_col = 'ts_pct'
-    TS_percent = float(df_advanced[ts_col].values[0])
+    TS_percent = float(df_advanced['ts_pct'].values[0])
 
-    # Extract per game stats table for 3P% and FT%
-    per_game_table = soup.find('table', {'id': 'per_game-team'})
-    if not per_game_table:
+    # Extract the per game stats table
+    df_per_game = None
+    for table in all_tables:
+        if 'Team' in table.columns and 'fg3_pct' in table.columns and 'ft_pct' in table.columns:
+            df_per_game = table
+            break
+    if df_per_game is None:
         raise ValueError("No per game stats table found on the page.")
-
-    df_per_game = pd.read_html(str(per_game_table))[0]
-    if isinstance(df_per_game.columns, pd.MultiIndex):
-        df_per_game.columns = df_per_game.columns.droplevel(0)  # Drop the top level of the multi-index if present
+    
     df_per_game = df_per_game[df_per_game['Team'] == 'League Average']
     if df_per_game.empty:
         raise ValueError("No 'League Average' row found in the per game stats table.")
     
     # Use the correct data-stat for 3P% and FT%
-    tpp_col = 'fg3_pct'
-    ftp_col = 'ft_pct'
-    TPP = float(df_per_game[tpp_col].values[0])
-    FTP = float(df_per_game[ftp_col].values[0])
+    TPP = float(df_per_game['fg3_pct'].values[0])
+    FTP = float(df_per_game['ft_pct'].values[0])
 
     return TS_percent, TPP, FTP
+
     
 @st.cache(ttl=86400)
 def fetch_data_multi_years(start_year, end_year, season_type, stats_type):
