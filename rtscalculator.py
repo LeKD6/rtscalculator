@@ -73,7 +73,7 @@ def fetch_league_averages(input_year, season_type):
             raise ValueError("No 'League Average' row found in the advanced stats table.")
         
         # Use the correct column for True Shooting Percentage (TS%)
-        TS_percent = float(df_advanced['TS%'].values[0])
+        TS_percent = float(df_advanced['ts_pct'].values[0])
 
         # Fetch and parse the per game stats table
         df_per_game = pd.read_html(url_per_game, match='Team')[0]
@@ -83,8 +83,8 @@ def fetch_league_averages(input_year, season_type):
             raise ValueError("No 'League Average' row found in the per game stats table.")
         
         # Use the correct columns for 3P% and FT%
-        TPP = float(df_per_game['3P%'].values[0])
-        FTP = float(df_per_game['FT%'].values[0])
+        TPP = float(df_per_game['fg3_pct'].values[0])
+        FTP = float(df_per_game['ft_pct'].values[0])
 
         return TS_percent, TPP, FTP
     else:
@@ -125,7 +125,7 @@ def fetch_league_averages(input_year, season_type):
             return TS_percent, TPP, FTP
         else:
             raise ValueError(f"Data for season {season_str} not found.")
-            
+
 @st.cache(ttl=86400)
 def fetch_data_multi_years(start_year, end_year, season_type, stats_type):
     all_dfs = []
