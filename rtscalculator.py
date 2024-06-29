@@ -66,25 +66,29 @@ def fetch_league_averages(input_year, season_type):
         url_per_game = f"https://www.basketball-reference.com/playoffs/NBA_{input_year}.html#per_game-team"
         
         # Fetch and parse the advanced stats table
-        df_advanced = pd.read_html(url_advanced, match='Team')[0]
+        df_advanced = pd.read_html(url_advanced, match='Advanced Stats')[0]
         df_advanced.columns = df_advanced.columns.droplevel(0) if isinstance(df_advanced.columns, pd.MultiIndex) else df_advanced.columns
         df_advanced = df_advanced[df_advanced['Team'] == 'League Average']
         if df_advanced.empty:
             raise ValueError("No 'League Average' row found in the advanced stats table.")
         
-        # Use the correct column for True Shooting Percentage (TS%)
-        TS_percent = float(df_advanced['ts_pct'].values[0])
+        # Check the actual column names and select the appropriate one
+        print(df_advanced.columns)
+        ts_col = 'TS%' if 'TS%' in df_advanced.columns else 'ts_pct'
+        TS_percent = float(df_advanced[ts_col].values[0])
 
         # Fetch and parse the per game stats table
-        df_per_game = pd.read_html(url_per_game, match='Team')[0]
+        df_per_game = pd.read_html(url_per_game, match='Per Game Stats')[0]
         df_per_game.columns = df_per_game.columns.droplevel(0) if isinstance(df_per_game.columns, pd.MultiIndex) else df_per_game.columns
         df_per_game = df_per_game[df_per_game['Team'] == 'League Average']
         if df_per_game.empty:
             raise ValueError("No 'League Average' row found in the per game stats table.")
         
-        # Use the correct columns for 3P% and FT%
-        TPP = float(df_per_game['fg3_pct'].values[0])
-        FTP = float(df_per_game['ft_pct'].values[0])
+        # Check the actual column names and select the appropriate ones
+        tpp_col = '3P%' if '3P%' in df_per_game.columns else 'fg3_pct'
+        ftp_col = 'FT%' if 'FT%' in df_per_game.columns else 'ft_pct'
+        TPP = float(df_per_game[tpp_col].values[0])
+        FTP = float(df_per_game[ftp_col].values[0])
 
         return TS_percent, TPP, FTP
     else:
