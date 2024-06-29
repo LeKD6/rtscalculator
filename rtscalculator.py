@@ -5,7 +5,7 @@ import requests
 from urllib.request import urlopen
 from st_aggrid import AgGrid
 
-@st.cache(ttl=86400)
+@st.cache_data(ttl=86400)
 def fetch_data_per_75(year, season_type):
     if season_type == "leagues":
         url = f"https://www.basketball-reference.com/leagues/NBA_{year}_per_poss.html"
@@ -129,7 +129,7 @@ def fetch_league_averages(input_year, season_type):
         else:
             raise ValueError(f"Data for season {season_str} not found.")
 
-@st.cache(ttl=86400)
+@st.cache_data(ttl=86400)
 def fetch_data_multi_years(start_year, end_year, season_type, stats_type):
     all_dfs = []
     for year in range(start_year, end_year + 1):
