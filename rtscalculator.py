@@ -60,27 +60,28 @@ def fetch_data(year, season_type):
 
 import streamlit as st
 from urllib.request import urlopen
+from bs4 import BeautifulSoup
 import pandas as pd
+import requests
 
 @st.cache_data(ttl=86400)
 def fetch_league_averages(input_year, season_type):
     url = f"https://www.basketball-reference.com/playoffs/NBA_{input_year}.html" if season_type == "playoffs" else f"https://www.basketball-reference.com/leagues/NBA_{input_year}.html"
     
-    # collect HTML data
-    html = urlopen(url)
+    response = requests.get(url)
+    if response.status_code != 200:
+        raise ValueError(f"Failed to fetch data from {url}")
     
-    # Use pandas to read all tables from the page
-    all_tables = pd.read_html(html, flavor='lxml')
+    soup = BeautifulSoup(response.content, 'html.parser')
     
-    # Extract the advanced stats table
-    df_advanced = None
-    for table in all_tables:
-        if 'Team' in table.columns and 'ts_pct' in table.columns:
-            df_advanced = table
-            break
-    if df_advanced is None:
+    # Extract advanced stats table for TS%
+    advanced_selector = 'advanced-team'
+    advanced_table = soup.find('table', {'id': advanced_selector})
+    if not advanced_table:
         raise ValueError("No advanced stats table found on the page.")
     
+    df_advanced = pd.read_html(str(advanced_table))[0]
+    df_advanced.rename(columns={'TS%': 'ts_pct'}, inplace=True)  # Ensure column naming matches data-stat
     df_advanced = df_advanced[df_advanced['Team'] == 'League Average']
     if df_advanced.empty:
         raise ValueError("No 'League Average' row found in the advanced stats table.")
@@ -88,15 +89,14 @@ def fetch_league_averages(input_year, season_type):
     # Use the correct data-stat for True Shooting Percentage (TS%)
     TS_percent = float(df_advanced['ts_pct'].values[0])
 
-    # Extract the per game stats table
-    df_per_game = None
-    for table in all_tables:
-        if 'Team' in table.columns and 'fg3_pct' in table.columns and 'ft_pct' in table.columns:
-            df_per_game = table
-            break
-    if df_per_game is None:
+    # Extract per game stats table for 3P% and FT%
+    per_game_selector = 'per_game-team'
+    per_game_table = soup.find('table', {'id': per_game_selector})
+    if not per_game_table:
         raise ValueError("No per game stats table found on the page.")
     
+    df_per_game = pd.read_html(str(per_game_table))[0]
+    df_per_game.rename(columns={'3P%': 'fg3_pct', 'FT%': 'ft_pct'}, inplace=True)  # Ensure column naming matches data-stat
     df_per_game = df_per_game[df_per_game['Team'] == 'League Average']
     if df_per_game.empty:
         raise ValueError("No 'League Average' row found in the per game stats table.")
@@ -106,6 +106,7 @@ def fetch_league_averages(input_year, season_type):
     FTP = float(df_per_game['ft_pct'].values[0])
 
     return TS_percent, TPP, FTP
+
 
     
 @st.cache(ttl=86400)
