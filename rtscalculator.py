@@ -82,7 +82,12 @@ def fetch_league_averages(input_year, season_type):
         # Fetch and parse the per game stats table
         df_per_game = pd.read_html(url_per_game, match='Per Game Stats')[0]
         df_per_game.columns = df_per_game.columns.droplevel(0) if isinstance(df_per_game.columns, pd.MultiIndex) else df_per_game.columns
-        df_per_game = df_per_game[df_per_game['Team'] == 'League Average']
+        if 'Team' in df_advanced.columns:
+            df_advanced = df_advanced[df_advanced['Team'] == 'League Average']
+        elif 'Tm' in df_advanced.columns:
+            df_advanced = df_advanced[df_advanced['Tm'] == 'League Average']
+        else:
+            print("Neither 'Team' nor 'Tm' column exists in df_advanced")
         if df_per_game.empty:
             raise ValueError("No 'League Average' row found in the per game stats table.")
         
