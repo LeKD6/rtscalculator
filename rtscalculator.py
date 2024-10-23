@@ -45,7 +45,7 @@ def fetch_data(year, season_type):
     table = soup.find(name='table')
     df = pd.read_html(str(table), flavor='lxml')[0]
 
-    df = df.dropna(subset=['Player', 'Teamm', 'MP'])  # Only drop rows where these columns are NaN
+    df = df.dropna(subset=['Player', 'Team', 'MP'])  # Only drop rows where these columns are NaN
 
     for col in ['PTS', 'FGA', 'FTA', 'MP', '3PA', 'AST', 'TOV', 'TRB', 'FT%', 'G']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
