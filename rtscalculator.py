@@ -238,8 +238,8 @@ st.sidebar.markdown("""
 # Allow users to select a range of years
 # Assuming your year range is from 1980 to 2025
 year_range = list(range(1980, 2026))
-default_start_year = 2024  # Set default start year
-default_end_year = 2024    # Set default end year
+default_start_year = 2025  # Set default start year
+default_end_year = 2025    # Set default end year
 
 # Set default values for select boxes
 start_year = st.selectbox("Select Start Year:", year_range, index=year_range.index(default_start_year))
