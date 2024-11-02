@@ -18,13 +18,15 @@ def fetch_data_per_75(year, season_type):
     df = pd.read_html(str(table), flavor='lxml')[0]
     
     # List of columns to check for NaN values
-    columns_to_check = ['Player', 'Team', 'Tm', 'MP']
+    # Standardize column names
+    if 'Tm' in df.columns:
+        df = df.rename(columns={'Tm': 'Team'})
     
-    # Filter the list to include only existing columns in the DataFrame
-    existing_columns = [col for col in columns_to_check if col in df.columns]
+    # List of columns to check for NaN values
+    columns_to_check = ['Player', 'Team', 'MP']
     
-    # Drop rows with NaN values in the existing columns
-    df = df.dropna(subset=existing_columns)
+    # Drop rows with NaN values in the specified columns
+    df = df.dropna(subset=columns_to_check)
     
     # Convert numerical columns to float
     for col in ['PTS', 'FGA', 'FTA', 'MP', '3PA', 'AST', 'TOV', 'TRB', 'FT%', 'G']:
@@ -52,13 +54,16 @@ def fetch_data(year, season_type):
     table = soup.find(name='table')
     df = pd.read_html(str(table), flavor='lxml')[0]
 
-    columns_to_check = ['Player', 'Team', 'Tm', 'MP']
+    # Standardize column names
+    if 'Tm' in df.columns:
+        df = df.rename(columns={'Tm': 'Team'})
+    
+    # List of columns to check for NaN values
+    columns_to_check = ['Player', 'Team', 'MP']
+    
+    # Drop rows with NaN values in the specified columns
+    df = df.dropna(subset=columns_to_check)
 
-# Filter the list to include only existing columns in the DataFrame
-    existing_columns = [col for col in columns_to_check if col in df.columns]
-
-# Drop rows with NaN values in the existing columns
-    df = df.dropna(subset=existing_columns)
   # Only drop rows where these columns are NaN
 
     for col in ['PTS', 'FGA', 'FTA', 'MP', '3PA', 'AST', 'TOV', 'TRB', 'FT%', 'G']:
