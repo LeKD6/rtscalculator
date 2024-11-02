@@ -277,7 +277,7 @@ if start_year and end_year and season_display:
     df_player_stats['MPG'] = df_player_stats['MP'] / df_player_stats['G']
     formatted_df = format_dataframe(df_player_stats)
 
-    unique_teams = df_player_stats['Tm'].dropna().unique().tolist()
+    unique_teams = df_player_stats['Team'].dropna().unique().tolist()
     unique_players = df_player_stats['Player'].dropna().unique().tolist()
      # Calculate MPG (Minutes per Game)
     
