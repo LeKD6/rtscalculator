@@ -293,7 +293,7 @@ if start_year and end_year and season_display:
     
     query = []
     if team != 'Select':
-        query.append(f"Tm == '{team}'")
+        query.append(f"Team == '{team}'")
     if player != 'Select':
         query.append(f'Player == "{player}"')
     if mpg > 0:
