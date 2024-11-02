@@ -87,10 +87,14 @@ def fetch_league_averages(input_year, season_type):
         # Fetch and parse the advanced stats table
         df_advanced = pd.read_html(url_advanced, match='Advanced Stats')[0]
         df_advanced.columns = df_advanced.columns.droplevel(0) if isinstance(df_advanced.columns, pd.MultiIndex) else df_advanced.columns
-        if 'Team' in df_advanced.columns:
-            df_advanced = df_advanced[df_advanced['Team'] == 'League Average']
-        elif 'Tm' in df_advanced.columns:
-            df_advanced = df_advanced[df_advanced['Tm'] == 'League Average']
+        # Standardize column names in df_advanced to use 'Team' consistently
+        if 'Tm' in df_advanced.columns:
+            df_advanced = df_advanced.rename(columns={'Tm': 'Team'})
+        
+        # Filter to include only rows where 'Team' is 'League Average'
+        df_advanced = df_advanced[df_advanced['Team'] == 'League Average']
+        
+        # Raise an error if the resulting DataFrame is empty
         if df_advanced.empty:
             raise ValueError("No 'League Average' row found in the advanced stats table.")
         
